@@ -1,0 +1,629 @@
+##### MACHINE LEARNING #####
+
+#### ML approach to identify most important factors determining dental calculus processing success
+
+################
+#### SET UP ####
+################
+
+#### LOAD PACKAGES ####
+#remotes::install_github("mlr-org/mlr3extralearners@*release")
+#remotes::install_url('https://github.com/catboost/catboost/releases/download/v1.2.5/catboost-R-windows-x86_64-1.2.5.tgz', INSTALL_opts = c("--no-multiarch", "--no-test-load"))
+library(dplyr)
+library(renv)
+library(here)
+library(ggplot2)
+library(mlr3)
+library(mlr3tuning)
+library(mlr3mbo)
+library(mlr3learners)
+library(mlr3extralearners)
+library(mlr3viz)
+library(mlr3tuningspaces)
+library(catboost)
+library(patchwork)
+library(paradox)
+library(stringr)
+library(pdp)
+
+#### VARIABLES AND WORKING DIRECTORY ####
+# Make sure working directory is correctly set
+wd <- here()
+setwd(wd)
+
+# Directory paths
+indir <- normalizePath(file.path("..","output", "LM"))
+outdir <- normalizePath(file.path("..","output", "ML")) # output directory
+
+# Create directory for output
+dir.create(outdir, recursive  =  TRUE, showWarnings  =  FALSE)
+
+# Set seed
+set.seed(12)
+
+# Theme
+source("ggplot_theme.R")
+theme_set(theme_bw_alt)
+
+# Load palettes
+for (file in dir(file.path("..", "input", "palettes"))) {
+  name <- str_remove(file, ".csv")
+  palette <- read.csv(file.path("..", "input", "palettes", file)) %>% pull(2)
+  names(palette) <-  read.csv(file.path("..", "input", "palettes", file)) %>% pull(1)
+  assign(name, palette)
+}
+
+#####  Load input data #####
+
+# Filtered data
+filt_dat <- read.table(file.path(indir, "filtered_data.tsv"), sep = "\t", quote = "", header = TRUE)
+
+# Filter table
+ml_data <- filt_dat %>% dplyr::select(Ext.ID, Species, order, PC1, PC2, Pigmented_extract, Qubit.concentration.ng.ul., DNA_input_ng, Ind.copies) %>%
+  # Define factors
+  mutate(order = factor(order),
+         Pigmented_extract = factor(Pigmented_extract)) %>%
+  filter(!is.na(Ind.copies)) %>%
+  # Get log transformed indexing copies
+  mutate(Ind.copies.log = log10(Ind.copies)) %>%
+  # Define successfull indexing as above 10^8 copies
+  mutate(failed_indexing = (Ind.copies.log < 8))
+
+# Make sure order is treated as unordered factor
+ml_data$order <- factor(ml_data$order, ordered = FALSE)
+
+#best_params <- readRDS(file.path(outdir, "best_params.RDS"))
+
+#saved_learners <- dir(path = outdir, pattern = "regr.*.RDS")
+#for (filename in saved_learners) {
+#  objname <- filename %>% str_remove("regr.") %>% str_remove(".RDS")
+#  obj <- readRDS(file = file.path(outdir, filename))
+#  assign(objname, obj)
+#}
+
+#saved_learners <- dir(path = outdir, pattern = "classif.*.RDS")
+#for (filename in saved_learners) {
+#  objname <- filename %>% str_remove("classif.") %>% str_remove(".RDS")
+#  obj <- readRDS(file = file.path(outdir, filename))
+#  assign(objname, obj)
+#}
+
+#########################
+#### REGRESSION TASK ####
+#########################
+
+#### Create task from lab metadata ####
+
+# Create task with indexing copies log as the target
+task_regr <- as_task_regr(Ind.copies.log ~ order + PC1 + PC2 + Pigmented_extract + DNA_input_ng,
+                              data = ml_data)
+
+# Plot task features
+task_regr_plot <- autoplot(task_regr, type = "pairs")
+
+ggsave(task_regr_plot, filename  =  file.path(outdir, "regression_task_data.png"), width  =  12, height = 12)
+
+#### Split training - testing ####
+# Set order and pigmentation as strata (so both train and test datasets get a similar distribution of these factors)
+task_regr$set_col_roles("order", c("feature", "stratum"))
+task_regr$set_col_roles("Pigmented_extract", c("feature", "stratum"))
+
+set.seed(12)
+splits = partition(task_regr, ratio = 0.67)
+
+# Plot datasets to verify stratification
+task_regr_split <- task_regr$data()
+task_regr_split$Sample <- ml_data$Ext.ID
+task_regr_split$dataset <- ifelse(task_regr$row_ids %in% splits$train, "train",
+                                  ifelse(task_regr$row_ids %in% splits$test, "test", NA))
+
+# Save
+write.csv(task_regr_split, file = file.path(outdir, "task_split.csv"), quote = FALSE, row.names = FALSE)
+
+ggplot(aes(x = dataset, fill = order), data = task_regr_split) + geom_bar()
+
+# Use only the training data for tuning
+task_train = task_regr$clone()$filter(splits$train)
+task_test = task_regr$clone()$filter(splits$test)
+
+#### Prepare for tuning and benchmarking ####
+
+# Use Mean Absolute Error as measure
+measure = msr("regr.mape")
+
+# Best parameters
+best_params = list()
+
+# Write function for tuning and saving results: this will be used to tune several candidate learners before benchmarking
+tune_and_save <- function(learner, label, task) {
+  # Define resampling strategy
+  set.seed(12)
+  rcv = rsmp("repeated_cv", repeats = 10, folds = 10)
+  
+  # Define terminator
+  term = trm("evals", n_evals = 100)
+  
+  # Define tuner: Bayesian optimisation
+  tuner = tnr("mbo")
+  
+  # Tune learner on task
+  instance = TuningInstanceBatchSingleCrit$new(task, learner, rcv, measure, term)
+  tuner$optimize(instance)
+  instance$result
+  
+  # Plot tuning results
+  p <- wrap_plots(autoplot(instance))
+  ggsave(p, filename  =  file.path(outdir, paste0(label, "_tuning.png")), width  =  13, height = 8)
+ 
+  # Add tuning to best_params list and save list
+  best_params[[label]] <<- instance$result_learner_param_vals
+  saveRDS(best_params, file.path(outdir, "best_params.RDS"))
+  
+  # Return best parameters
+  return(instance$result_learner_param_vals)
+  }
+
+#### Featureless and lm ####
+lrn_featureless = lrn("regr.featureless")
+lrn_lm = lrn("regr.lm")
+
+#### Tune catboost ####
+#lrn_catboost = lrn("regr.catboost",
+#                   iterations = to_tune(100,500),
+#                   learning_rate = to_tune(0.01, 0.3),
+#                   depth = to_tune(4, 10),
+#                   l2_leaf_reg = to_tune(1, 10),
+#                   bagging_temperature = to_tune(0, 1),
+#                   #subsample = to_tune(0.5, 1),
+#                   random_strength = to_tune(0, 1)
+#                   )
+
+#lrn_catboost$param_set$values <- tune_and_save(lrn_catboost, "regr.catboost", task_train)
+
+#### Tune kknn ####
+lrn_kknn = lrn("regr.kknn",
+               k = to_tune(1, 30),
+               distance = to_tune(0, 5),
+               kernel = to_tune(c("rectangular", "triangular", "epanechnikov")))
+
+lrn_kknn$param_set$values <- tune_and_save(lrn_kknn, "regr.kknn", task_train)
+
+#### Tune nnet ####
+lrn_nnet = lrn("regr.nnet",
+               size = to_tune(1, 20),
+               decay = to_tune(-10, 10),
+               maxit = to_tune(100, 1000))
+
+lrn_nnet$param_set$values <- tune_and_save(lrn_nnet, "regr.nnet", task_train)
+
+#### Tune randomForest ####
+lrn_randomForest = lrn("regr.randomForest", 
+                       ntree = to_tune(100, 1000), 
+                       mtry = to_tune(1, task_regr$n_features),
+                       nodesize = to_tune(5, 30), 
+                       maxnodes = to_tune(10, 30), 
+                       replace = FALSE
+                       )
+
+lrn_randomForest$param_set$values <- tune_and_save(lrn_randomForest, "regr.randomForest", task_train)
+
+#### Tune ranger ####
+lrn_ranger = lrn("regr.ranger", 
+                 num.trees = to_tune(100, 1000), 
+                 mtry = to_tune(1, task_regr$n_features), 
+                 min.node.size = to_tune(5, 30), 
+                 sample.fraction = to_tune(0.5, 1), 
+                 max.depth = to_tune(4, 20), 
+                 splitrule = to_tune(c("variance", "extratrees", "maxstat")),
+                 importance = "impurity")
+
+# Tune on training dataset
+lrn_ranger$param_set$values <- tune_and_save(lrn_ranger, "regr.ranger", task_train)
+
+#### Benchmark ####
+rcv = rsmp("repeated_cv", repeats = 10, folds = 10)
+
+# Get benchmark design: Benchmark using the training set
+learners <- ls(pattern = "lrn_.*")
+
+design = benchmark_grid(
+  tasks = task_train,
+  learners = lapply(learners, get),
+  resamplings = rcv
+  )
+
+# Save plot
+set.seed(12)
+bmr = benchmark(design)
+p <- autoplot(bmr, measure = measure) +
+  theme(theme_bw_alt) +
+  scale_fill_viridis_d() +
+  theme(plot.background = element_rect(fill = "white")) +
+  theme(legend.location = "none")
+
+ggsave(p, filename  =  file.path(outdir, "benchmarking_regr.png"), width  =  13, height = 8)
+
+# Save aggregate scores
+bmr_scores <- bmr$aggregate(measure)
+write.csv(select(bmr_scores, c(nr, learner_id, regr.mape)), file = file.path(outdir, "bmr_regr_aggregate_scores.csv"), quote = FALSE, row.names = FALSE)
+
+#### Evaluate using test dataset ####
+evaluations <- list()
+
+for (name in learners) {
+  set.seed(12)
+  obj <- get(name)
+  obj$train(task_train)
+  evaluations[name] <- obj$predict(task_test)$score(measure)
+  p <- obj$predict(task_test) %>% autoplot
+  p <- p + theme(plot.background = element_rect(fill = "white"))
+  ggsave(p, filename  =  file.path(outdir, paste0("regr.", name, "_predictions.png")), width  =  13, height = 8)
+}
+
+# Plot
+evaluations_df <- unlist(evaluations) %>% as.data.frame()
+colnames(evaluations_df) <- measure$label
+evaluations_df$learner <- rownames(evaluations_df) %>% str_remove(., "lrn_") %>% paste0("regr.", .)
+
+write.csv(evaluations_df, file = file.path(outdir, "model_evaluation_regr.csv"), quote = FALSE, row.names = FALSE)
+
+p <- ggplot(aes(y = `Mean Absolute Percent Error`, x = learner, fill = learner), data = evaluations_df) +
+  geom_bar(stat = "identity") +
+  scale_fill_viridis_d() + theme(legend.position = "none") 
+
+ggsave(p, filename  =  file.path(outdir, "model_evaluation_regr.png"), width  =  13, height = 8)
+
+## Save all learners
+for (l in learners) {
+  name = paste0("regr.", l, ".RDS")
+  obj = get(l)
+  saveRDS(object = obj, file = file.path(outdir, name))
+}
+
+#### Extract best model ####
+model <- lrn_ranger$model
+
+## Variable importance
+importance <- ranger::importance(model)
+importance_df <- data.frame(
+  Variable = names(importance),
+  Importance = as.numeric(importance)
+) %>% arrange(-Importance)
+
+write.csv(importance_df, file = file.path(outdir, "regr.ranger_importance.csv"), quote = FALSE, row.names = FALSE)
+
+# Plot
+importance_df$Variable <- factor(importance_df$Variable, levels = rev(importance_df$Variable))
+pImp <- ggplot(data = importance_df, aes(x = Importance, y = Variable)) + geom_bar(stat = "identity", fill = "#AA3C39") +
+  scale_y_discrete(labels = data.frame("DNA_input_ng" = "DNA input (ng)",
+                                       "PC1" = "PC1 (carnivory axis)",
+                                       "PC2" = "PC2 (herbi-frugivory axis)",
+                                       "Pigmented_extract" = "Pigmented extract",
+                                       "order" = "Taxonomic order"))
+
+## Partial dependence plots
+
+# Get partial dependence for each variable and overlay with real data
+relabel <- data.frame("DNA_input_ng" = "DNA input (ng)",
+                      "PC1" = "PC1 (carnivory axis)",
+                      "PC2" = "PC2 (herbi-frugivory axis)",
+                      "Pigmented_extract" = "Pigmented extract",
+                      "order" = "Taxonomic order")
+
+for (i in 1:length(task_regr$feature_names)) {
+  varname <- task_regr$feature_names[i]
+  vartype <- task_regr$feature_types[i]$type
+  # Get partial dependence
+  pd <- partial(model, pred.var = varname, train = task_regr$data())
+
+  # Plot
+  p <- ggplot(data = pd, aes(y = yhat, x = .data[[varname]])) +
+    ylab("Predicted indexed molecules (log10)") +
+    xlab(relabel[varname])
+  if (vartype == "numeric") { p <- p + geom_line() }
+  if (vartype == "factor") { p <- p + geom_bar(stat = "identity") }
+  assign(paste0("p", i), p)
+}
+
+p_grid <- cowplot::plot_grid(pImp + labs(tag = "A."), 
+                   p1 + ylab("Prediction") + scale_y_continuous(limits = c(8.6, 9.8)) + labs(tag = "B."),
+                   p2 + ylab("Prediction") + scale_y_continuous(limits = c(8.6, 9.8)) + labs(tag = "C."),
+                   p3 + ylab("Prediction") + scale_y_continuous(limits = c(8.6, 9.8)) + labs(tag = "D."))
+
+ggsave(p_grid, filename  =  file.path(outdir, "regr_ranger_pd.png"), width  =  18, height = 8)
+
+#############################
+#### CLASSIFICATION TASK ####
+#############################
+
+# Create task with indexing copies log as the target
+task_classif <- as_task_classif(failed_indexing ~ order + PC1 + PC2 + Pigmented_extract + DNA_input_ng,
+                          data = ml_data)
+
+# Plot task features
+task_classif_plot <- autoplot(task_classif, type = "pairs")
+
+ggsave(task_classif_plot, filename  =  file.path(outdir, "classification_task_data.png"), width  =  12, height = 12)
+
+#### Split training - testing ####
+
+# Use only the training data for tuning
+task_train = task_classif$clone()$filter(splits$train)
+task_test = task_classif$clone()$filter(splits$test)
+
+#### Prepare for tuning and benchmarking ####
+
+# Remove previous learners
+rm(list = ls(pattern = "lrn_.*"))
+
+# Area under the curve as measure
+measure = msr("classif.acc")
+
+#### Featureless ####
+lrn_featureless = lrn("classif.featureless", predict_type = "prob")
+
+#### Tune catboost ####
+#lrn_catboost = lrn("classif.catboost", predict_type = "prob",
+#                   iterations = to_tune(100,500),
+#                   learning_rate = to_tune(0.01, 0.3),
+#                   depth = to_tune(4, 10),
+#                   l2_leaf_reg = to_tune(1, 10),
+#                   bagging_temperature = to_tune(0, 1),
+#                   #subsample = to_tune(0.5, 1),
+#                   random_strength = to_tune(0, 1))
+
+#lrn_catboost$param_set$values <- tune_and_save(lrn_catboost, "classif.catboost", task_train)
+
+#### Tune kknn ####
+lrn_kknn = lrn("classif.kknn", predict_type = "prob",
+               k = to_tune(1, 30),
+               distance = to_tune(0, 5),
+               kernel = to_tune(c("rectangular", "triangular", "epanechnikov")))
+
+lrn_kknn$param_set$values <- tune_and_save(lrn_kknn, "classif.kknn", task_train)
+
+#### Tune nnet ####
+lrn_nnet = lrn("classif.nnet", predict_type = "prob",
+               size = to_tune(1, 20),
+               decay = to_tune(-10, 10),
+               maxit = to_tune(100, 1000))
+
+lrn_nnet$param_set$values <- tune_and_save(lrn_nnet, "classif.nnet", task_train)
+
+#### Tune randomForest ####
+lrn_randomForest = lrn("classif.randomForest", predict_type = "prob", 
+                       ntree = to_tune(100, 1000), 
+                       mtry = to_tune(1, task_regr$n_features),
+                       nodesize = to_tune(5, 30), 
+                       maxnodes = to_tune(1, 30), 
+                       replace = FALSE
+                       )
+
+lrn_randomForest$param_set$values <- tune_and_save(lrn_randomForest, "classif.randomForest", task_train)
+
+#### Tune ranger ####
+lrn_ranger = lrn("classif.ranger", predict_type = "prob", 
+                 num.trees = to_tune(100, 1000), 
+                 mtry = to_tune(1, task_regr$n_features), 
+                 min.node.size = to_tune(5, 30), 
+                 sample.fraction = to_tune(0.5, 1), 
+                 max.depth = to_tune(4, 25), 
+                 splitrule = to_tune(c("gini", "extratrees", "hellinger")),
+                 importance = "impurity")
+
+# Tune on training dataset
+lrn_ranger$param_set$values <- tune_and_save(lrn_ranger, "classif.ranger", task_train)
+
+#### Tune rpart ####
+lrn_rpart = lrn("classif.rpart", predict_type = "prob",
+                cp = to_tune(0.001, 0.1),  # Complexity parameter
+                minbucket = to_tune(5, 30),  # Minimum number of observations in any terminal node
+                maxdepth = to_tune(1, 30)  # Maximum depth of any node of the final tree
+)
+
+lrn_rpart$param_set$values <- tune_and_save(lrn_rpart, "classif.rpart", task_train)
+
+#### Benchmark ####
+rcv = rsmp("repeated_cv", repeats = 10, folds = 10)
+
+# Get benchmark design: Benchmark using the training set
+learners <- ls(pattern = "lrn_.*")
+
+design = benchmark_grid(
+  tasks = task_train,
+  learners = lapply(learners, get),
+  resamplings = rcv
+)
+
+# Save plot
+set.seed(12)
+bmr = benchmark(design)
+p <- autoplot(bmr, measure = measure) +
+  theme(theme_bw_alt) +
+  scale_fill_viridis_d() +
+  theme(plot.background = element_rect(fill = "white")) +
+  theme(legend.location = "none")
+
+ggsave(p, filename  =  file.path(outdir, "benchmarking_classif.png"), width  =  13, height = 8)
+
+# Save aggregate scores
+bmr_scores <- bmr$aggregate(measure)
+write.csv(select(bmr_scores, c(nr, learner_id, classif.acc)), file = file.path(outdir, "bmr_classif_aggregate_scores.csv"), quote = FALSE, row.names = FALSE)
+
+#### Evaluate using test dataset ####
+evaluations <- list()
+
+for (name in learners) {
+  set.seed(12)
+  obj <- get(name)
+  obj$train(task_train)
+  evaluations[name] <- obj$predict(task_test)$score()
+  p <- obj$predict(task_test) %>% autoplot
+  p <- p + theme(plot.background = element_rect(fill = "white"))
+  ggsave(p, filename  =  file.path(outdir, paste0("classif.", name, "_predictions.png")), width  =  13, height = 8)
+}
+
+# Plot
+evaluations_df <- unlist(evaluations) %>% as.data.frame()
+colnames(evaluations_df) <- measure$label
+evaluations_df$learner <- rownames(evaluations_df) %>% str_remove(., "lrn_") %>% paste0("regr.", .)
+
+write.csv(evaluations_df, file = file.path(outdir, "model_evaluation_classif.csv"), quote = FALSE, row.names = FALSE)
+
+p <- ggplot(aes(y = `Classification Accuracy`, x = learner, fill = learner), data = evaluations_df) +
+  geom_bar(stat = "identity") +
+  scale_fill_viridis_d() + theme(legend.position = "none") 
+
+ggsave(p, filename  =  file.path(outdir, "model_evaluation_classif.png"), width  =  13, height = 8)
+
+## Save all learners
+
+for (l in learners) {
+  name = paste0("classif.", l, ".RDS")
+  obj = get(l)
+  saveRDS(object = obj, file = file.path(outdir, name))
+}
+
+#### Extract best model ####
+model <- lrn_ranger$model
+
+# How good is the model?
+lrn_ranger$predict(task_test)$confusion
+lrn_ranger$predict(task_test)$score(msr("classif.fpr"))
+lrn_ranger$predict(task_test)$score(msr("classif.fnr"))
+
+## Variable importance
+importance <- ranger::importance(model)
+importance_df <- data.frame(
+  Variable = names(importance),
+  Importance = as.numeric(importance)
+) %>% arrange(-Importance)
+
+write.csv(importance_df, file = file.path(outdir, "classif.ranger_importance.csv"), quote = FALSE, row.names = FALSE)
+
+# Plot
+importance_df$Variable <- factor(importance_df$Variable, levels = rev(importance_df$Variable))
+pImp <- ggplot(data = importance_df, aes(x = Importance, y = Variable)) + geom_bar(stat = "identity", fill = "#AA3C39") +
+  scale_y_discrete(labels = data.frame("DNA_input_ng" = "DNA input (ng)",
+                                       "PC1" = "PC1 (carnivory axis)",
+                                       "PC2" = "PC2 (herbi-frugivory axis)",
+                                       "Pigmented_extract" = "Pigmented extract"))
+
+## Partial dependence plots
+
+for (i in 1:length(task_classif$feature_names)) {
+  varname <- task_classif$feature_names[i]
+  vartype <- task_classif$feature_types[i]$type
+  # Get partial dependence
+  pd <- partial(model, pred.var = varname, train = task_classif$data())
+  
+  # Plot
+  p <- ggplot(data = pd, aes(y = yhat, x = .data[[varname]])) +
+    ylab("Predicted indexed molecules (log10)") +
+    xlab(relabel[varname])
+  if (vartype == "numeric") { p <- p + geom_line() }
+  if (vartype == "factor") { p <- p + geom_bar(stat = "identity") }
+  assign(paste0("p", i), p)
+}
+
+p_grid <- cowplot::plot_grid(pImp + labs(tag = "A."), 
+                             p1 + ylab("Prediction") + scale_y_continuous(limits = c(8.6, 9.8)) + labs(tag = "B."),
+                             p2 + ylab("Prediction") + scale_y_continuous(limits = c(8.6, 9.8)) + labs(tag = "C."),
+                             p3 + ylab("Prediction") + scale_y_continuous(limits = c(8.6, 9.8)) + labs(tag = "D."))
+
+ggsave(p_grid, filename  =  file.path(outdir, "regr_ranger_pd.png"), width  =  18, height = 8)
+
+## Get predictions
+
+# Create hypothetical data for one artiodactyl, one frugivorous primate and one carnivoran
+hypothetical_species <- data.frame(species = c("hypothetical species 1", "hypothetical species 2", "hypothetical species 3"),
+                                   order = c("Artiodactyla", "Primates", "Carnivora"),
+                                   diet_category = c("Herbivore", "Frugivore", "Animalivore"),
+                                   PC1 = c(0, 0, 60),
+                                   PC2 = c(-10, 10, 0))
+
+bracket_size = 50 # will also use this later for the real data
+max = 250
+concs <- seq(0, max, bracket_size)
+sp <- hypothetical_species$species
+pigm <- factor(c(TRUE, FALSE), levels = c("FALSE", "TRUE"))
+
+# Get all combinations of data
+new_data <- expand.grid(DNA_input_ng = concs,
+                        species = sp,
+                        Pigmented_extract = pigm) %>%
+  left_join(hypothetical_species)
+
+# Get random forest prediction
+new_data$pred.success <- lrn_ranger$predict_newdata(new_data)$data$prob[, "FALSE"]
+
+# Get real data for comparison
+# Keep only samples that roughlt correspond to these hypothetical taxa
+real_data <- ml_data %>% filter((order == "Carnivora" & PC1 > 50) | (order == "Primates" & PC2 > 5) | (order == "Artiodactyla" & PC1 < -8)) %>%
+  filter(DNA_input_ng < max+bracket_size) %>%
+  # create brackets for the DNA input variable
+  mutate(binned_input = floor(DNA_input_ng/bracket_size)*bracket_size) %>% group_by(binned_input, order, Pigmented_extract) %>%
+  summarise(total = n_distinct(Ext.ID), success = n_distinct(Ext.ID[failed_indexing==FALSE])) %>%
+  mutate(real.success = round(success * 100 / total, digits = 1)) %>%
+  # Add diet labels
+  left_join(unique(select(new_data, c(order, diet_category))))
+
+combined_data <- full_join(new_data, real_data, by = c("DNA_input_ng" = "binned_input",
+                                                       "Pigmented_extract" = "Pigmented_extract",
+                                                       "diet_category" = "diet_category",
+                                                       "order" = "order"))
+
+write.csv(combined_data, file = file.path(outdir, "classif_ranger_hypothetical_data.csv"), quote = FALSE, row.names = FALSE)
+
+
+# Plot
+labels_vec <- c("Animalivore" = "animalivorous carnivoran",
+  "Frugivore" = "frugivorous primate",
+  "Herbivore" = "herbivorous artiodactyl",
+  "Omnivore" = "NA")
+
+p <-
+  ggplot(data = combined_data, aes(y = pred.success*100, x = DNA_input_ng)) +
+  # Add predicted values for hypothetical data
+  geom_line(aes(colour = diet_category, linetype = Pigmented_extract), linewidth = 1.5) +
+  scale_linetype(name = "Hypothetical samples", labels = c(`FALSE` = "Clear extract", `TRUE` = "Pigmented extract")) +
+  scale_colour_manual(values = diet2_palette, name = "Host type", labels = labels_vec) +
+  # Add real data
+  ggnewscale::new_scale_colour() +
+  geom_point(aes(y = real.success, shape = Pigmented_extract, colour = diet_category),
+             size = 3, position = position_jitter()) +
+  scale_shape_manual(values = c(16, 1), name = "Real samples", labels = c(`FALSE` = "Clear extract", `TRUE` = "Pigmented extract")) +
+  scale_colour_manual(values = diet2_palette, name = "Host type", labels = labels_vec) +
+  # Other
+  ylab("Probability of indexing success (%)") + xlab("DNA input (ng)") +
+  geom_label(x = 100, y = 45, label = "Pigmented extracts", size=5, alpha=0.5, colour = "black") +
+  geom_label(x = 100, y = 80, label = "Clear extracts", size=5, alpha=0.5, colour = "black") +
+  labs(tag = "C.")
+
+ggsave(p, filename  =  file.path(outdir, "classif_ranger_hypothetical.png"), width  =  12, height = 10)
+
+
+
+
+
+
+
+
+
+
+##### Just testing ###
+
+# Define bin size
+bin_size <- 50
+
+# Create bins with specified size
+test <- ml_data %>%
+  mutate(DNA_input_bin = cut(DNA_input_ng, breaks = seq(min(DNA_input_ng), max(DNA_input_ng), by = bin_size))) %>%
+  group_by(DNA_input_bin, Pigmented_extract) %>%
+  summarise(total = n_distinct(Ext.ID), success = n_distinct(Ext.ID[failed_indexing==FALSE])) %>%
+  mutate(perc.success = success * 100 / total)
+
+ggplot(data = test, aes(x = DNA_input_bin, y = perc.success, group = Pigmented_extract)) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_blank()) +
+  facet_wrap(. ~ Pigmented_extract)
