@@ -1,0 +1,6 @@
+Classification Accuracy,learner
+0.775,regr.featureless
+0.78125,regr.kknn
+0.775,regr.nnet
+0.78125,regr.ranger
+0.775,regr.rpart

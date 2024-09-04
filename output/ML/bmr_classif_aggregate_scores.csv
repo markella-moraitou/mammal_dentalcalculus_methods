@@ -1,0 +1,6 @@
+nr,learner_id,classif.acc
+1,classif.featureless,0.780833333333333
+2,classif.kknn,0.802736742424242
+3,classif.nnet,0.780833333333333
+4,classif.ranger,0.797547348484849
+5,classif.rpart,0.780833333333333

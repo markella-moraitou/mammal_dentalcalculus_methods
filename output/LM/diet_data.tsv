@@ -1,0 +1,33 @@
+Species	Common.name	order	Species_Lintulaakso_et_al	diet_cluster_name	diet_quality	cp	ee	cf	ash	nfe	calculated_species_main_diet	PC1	PC2
+Sus scrofa domesticus	Pig	Artiodactyla	Sus scrofa	Browser-Rootivore	4.2	12.92185	4.06591	18.41128	9.56317	55.03775	Frugivore	-8.90399072433946	5.42847964048577
+Sus scrofa	Wild boar	Artiodactyla	Sus scrofa	Browser-Rootivore	4.2	12.92185	4.06591	18.41128	9.56317	55.03775	Frugivore	-8.90399072433946	5.42847964048577
+Ovis aries	Sheep	Artiodactyla	Ovis aries	Grazer-Browser	2.9	12.19316	2.3744	27.85431	9.73788	47.84024	Herbivore	-7.92513344217328	-6.52301242082621
+Equus caballus	Horse	Perissodactyla	Equus caballus	Grazer	4.1	10.65744	2.38335	29.64453	8.93891	48.37576	Herbivore	-9.90466404261961	-7.9098226059155
+Muntiacus muntjak	Muntjak	Artiodactyla	Muntiacus muntjak	Browser-Frugivore	5	13.31479	5.6142	14.59954	8.08755	58.38392	Frugivore	-9.43749640128809	10.5477378969678
+Giraffa camelopardalis	Reticulated giraffe	Artiodactyla	Giraffa camelopardalis	Browser	5	11.3339	3.13823	25.58103	5.57323	54.37362	Frugivore	-11.9615020817916	-1.2670773051243
+Cuniculus paca	Paca	Rodentia	Cuniculus paca	Frugivore-Browser	3.9	10.60653	3.31641	15.61663	10.2546	60.2058	Frugivore	-13.0244926523518	10.2166655502041
+Otaria byronia	South American sea lion	Carnivora	Otaria flavescens	Piscivore-Squid-Eater	99.99995	70.5	11.3	1.5	12.6	4	Animalivore	69.9615082872931	-0.89960583891688
+Tapirus indicus	Malayan tapir	Perissodactyla	Tapirus indicus	Browser-Grazer	4.7	10.12341	3.73429	21.99719	7.64161	56.50351	Frugivore	-12.9667540330975	2.8454567263308
+Arctocephalus australis	South American fur seals	Carnivora	Arctocephalus australis	Piscivore	5.2	76.94024	10.39008	0.35286	11.56014	0.75659	Animalivore	76.7827881830309	-1.12115824451169
+Macropus giganteus	Eastern grey kangaroo	Diprotodontia	Macropus giganteus	Grazer	3.9	11.16861	2.36059	29.12389	9.55251	47.79439	Herbivore	-9.00959695450783	-7.71866292852878
+Loxodonta africana	African elephant	Proboscidea	Loxodonta africana	Grazer	3.9	8.9086	2.43334	33.74356	7.61827	47.29621	Herbivore	-11.7206789612887	-12.1145534018771
+Hippopotamus amphibius	Hippo	Artiodactyla	Hippopotamus amphibius	Grazer	5.3	19.16876	3.96691	28.72915	7.32875	40.80641	Herbivore	1.30687521750788	-10.1822813088109
+Ovis ammon	Argali	Artiodactyla	Ovis ammon	Grazer	4.8	13.75303	3.0944	26.95259	9.08458	47.1154	Herbivore	-6.02457291540017	-5.9407267561816
+Camelus dromedarius	Dromedary camel	Artiodactyla	Camelus dromedarius	Browser-Grazer	4.2	11.69327	3.23701	22.53052	10.03013	52.5091	Herbivore	-9.50833016430624	0.44743529916606
+Meles meles	European badger	Carnivora	Meles meles	Vermivore-Carnivore	4.6	58.70442	13.25879	2.44115	11.42515	14.17059	Animalivore	55.1280475328621	2.68038716537059
+Dugong dugon	Dugong	Sirenia	Dugong dugon	Browser-Grazer	4.9	15.66575	2.67402	16.13874	10.42347	55.09804	Frugivore	-6.45581182708185	7.5233948296174
+Orcinus orca	Orca	Artiodactyla	Orcinus orca	Carnivore	4.7	58.10424	20.27461	1.75896	10.25319	9.6087	Animalivore	58.5576787500702	1.4276056935409
+Capreolus capreolus	Roe deer	Artiodactyla	Capreolus capreolus	Browser-Grazer	4.6	11.87004	3.18471	22.59587	9.88679	52.4626	Herbivore	-9.38266079536746	0.377468514960926
+Rupicapra rupicapra	Chamois	Artiodactyla	Rupicapra rupicapra	Browser-Grazer	4.6	14.41832	3.12154	23.39875	11.61744	47.44395	Herbivore	-4.63257055703509	-2.66364306181271
+Ovibos moschatus	Muskox	Artiodactyla	Ovibos moschatus	Grazer-Browser	4.1	9.72697	3.07464	30.26407	6.87157	50.06277	Herbivore	-11.7766320416841	-7.60888619295474
+Pongo pygmaeus	Bornean orangutan	Primates	Pongo pygmaeus	Frugivore-Browser	4.9	14.0531	4.24633	12.40414	10.1851	59.11132	Frugivore	-8.82303625213605	12.7609294275155
+Marmota marmota	Marmot	Rodentia	Marmota marmota	Browser-Florivore	4.9	12.29211	4.28354	20.27693	8.5824	54.56506	Herbivore	-9.61039158790925	3.55143660307588
+Papio anubis	Olive baboon	Primates	Papio anubis	Granivore-Frugivore	2.4	17.17402	6.55748	16.95524	5.39171	53.92152	Undefined	-4.5564375371569	6.62845657049146
+Diceros bicornis	Black rhino	Perissodactyla	Diceros bicornis	Browser	4.1	11.13674	2.49938	27.36192	8.20743	50.79453	Herbivore	-10.4021691454113	-4.67501381879996
+Ceratotherium simum	White rhino	Perissodactyla	Ceratotherium simum	Grazer	5.3	10.12274	2.3037	32.4131	7.64103	47.5194	Herbivore	-10.6151525034288	-10.7726055225742
+Cephalophus silvicultor	Yellow-backed duiker	Artiodactyla	Cephalophus silvicultor	Browser-Frugivore	3.2	11.49249	4.17325	16.7114	7.73566	59.88717	Frugivore	-12.4822491263736	9.24529937515967
+Piliocolobus foai	Central African red colobus	Primates	Piliocolobus foai	Browser-Frugivore	2.5	10.99542	4.47897	18.52198	6.14336	59.86028	Frugivore	-13.361648955799	7.65828360238433
+Gorilla beringei	Eastern gorilla	Primates	Gorilla beringei	Browser	4.5	12.60358	2.84532	19.11319	12.78136	52.65655	Herbivore	-7.91331823866828	3.50333842866334
+Equus burchellii	Plains zebra	Perissodactyla	Equus burchellii	Grazer	3.6	10.49486	2.50168	29.30311	8.30043	49.3999	Herbivore	-10.5614787700514	-7.10103172796969
+Syncerus caffer	African buffalo	Artiodactyla	Syncerus caffer	Grazer	3.9	10.14996	2.59276	30.57153	7.42786	49.25788	Herbivore	-11.1065850652807	-8.28408432779852
+Okapia johnstoni	Okapi	Artiodactyla	Okapia johnstoni	Browser-Grazer	3.8	11.75961	3.80114	19.86591	8.66007	55.91328	Herbivore	-10.7655524698765	4.51131049818256

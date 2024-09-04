@@ -1,0 +1,14 @@
+order,diet_category,n_samples,n_species
+Artiodactyla,Animalivore,5,1
+Artiodactyla,Frugivore,92,5
+Artiodactyla,Herbivore,185,9
+Carnivora,Animalivore,56,3
+Diprotodontia,Herbivore,14,1
+Perissodactyla,Frugivore,8,1
+Perissodactyla,Herbivore,48,4
+Primates,Frugivore,53,3
+Primates,Herbivore,9,1
+Proboscidea,Herbivore,15,1
+Rodentia,Frugivore,12,1
+Rodentia,Herbivore,13,1
+Sirenia,Frugivore,5,1

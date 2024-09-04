@@ -1,0 +1,7 @@
+Mean Absolute Percent Error,learner
+0.186315515742799,regr.featureless
+0.140778675700581,regr.kknn
+0.15864191831935,regr.lm
+0.15274320293409,regr.nnet
+0.140810314729355,regr.randomForest
+0.135529665909298,regr.ranger
