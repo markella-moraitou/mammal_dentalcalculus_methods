@@ -1,0 +1,33 @@
+Species,Species_Lintulaakso_et_al,diet_cluster_name,diet_quality,cp,ee,cf,ash,nfe,calculated_species_main_diet
+Camelus dromedarius,Camelus dromedarius,Browser-Grazer,4.2,11.69327,3.23701,22.53052,10.03013,52.5091,Herbivore
+Capreolus capreolus,Capreolus capreolus,Browser-Grazer,4.6,11.87004,3.18471,22.59587,9.88679,52.4626,Herbivore
+Cephalophus silvicultor,Cephalophus silvicultor,Browser-Frugivore,3.2,11.49249,4.17325,16.7114,7.73566,59.88717,Frugivore
+Giraffa camelopardalis,Giraffa camelopardalis,Browser,5,11.3339,3.13823,25.58103,5.57323,54.37362,Frugivore
+Hippopotamus amphibius,Hippopotamus amphibius,Grazer,5.3,19.16876,3.96691,28.72915,7.32875,40.80641,Herbivore
+Muntiacus muntjak,Muntiacus muntjak,Browser-Frugivore,5,13.31479,5.6142,14.59954,8.08755,58.38392,Frugivore
+Okapia johnstoni,Okapia johnstoni,Browser-Grazer,3.8,11.75961,3.80114,19.86591,8.66007,55.91328,Herbivore
+Orcinus orca,Orcinus orca,Carnivore,4.7,58.10424,20.27461,1.75896,10.25319,9.6087,Animalivore
+Ovis ammon,Ovis ammon,Grazer,4.8,13.75303,3.0944,26.95259,9.08458,47.1154,Herbivore
+Ovis aries,Ovis aries,Grazer-Browser,2.9,12.19316,2.3744,27.85431,9.73788,47.84024,Herbivore
+Rupicapra rupicapra,Rupicapra rupicapra,Browser-Grazer,4.6,14.41832,3.12154,23.39875,11.61744,47.44395,Herbivore
+Sus scrofa,Sus scrofa,Browser-Rootivore,4.2,12.92185,4.06591,18.41128,9.56317,55.03775,Frugivore
+Sus scrofa domesticus,Sus scrofa,Browser-Rootivore,4.2,12.92185,4.06591,18.41128,9.56317,55.03775,Frugivore
+Syncerus caffer,Syncerus caffer,Grazer,3.9,10.14996,2.59276,30.57153,7.42786,49.25788,Herbivore
+Meles meles,Meles meles,Vermivore-Carnivore,4.6,58.70442,13.25879,2.44115,11.42515,14.17059,Animalivore
+Otaria byronia,Otaria flavescens,Piscivore-Squid-Eater,99.99995,70.5,11.3,1.5,12.6,4,Animalivore
+Macropus giganteus,Macropus giganteus,Grazer,3.9,11.16861,2.36059,29.12389,9.55251,47.79439,Herbivore
+Ceratotherium simum,Ceratotherium simum,Grazer,5.3,10.12274,2.3037,32.4131,7.64103,47.5194,Herbivore
+Diceros bicornis,Diceros bicornis,Browser,4.1,11.13674,2.49938,27.36192,8.20743,50.79453,Herbivore
+Equus burchellii,Equus burchellii,Grazer,3.6,10.49486,2.50168,29.30311,8.30043,49.3999,Herbivore
+Equus caballus,Equus caballus,Grazer,4.1,10.65744,2.38335,29.64453,8.93891,48.37576,Herbivore
+Tapirus indicus,Tapirus indicus,Browser-Grazer,4.7,10.12341,3.73429,21.99719,7.64161,56.50351,Frugivore
+Gorilla beringei,Gorilla beringei,Browser,4.5,12.60358,2.84532,19.11319,12.78136,52.65655,Herbivore
+Papio anubis,Papio anubis,Granivore-Frugivore,2.4,17.17402,6.55748,16.95524,5.39171,53.92152,Undefined
+Piliocolobus foai,Piliocolobus foai,Browser-Frugivore,2.5,10.99542,4.47897,18.52198,6.14336,59.86028,Frugivore
+Pongo pygmaeus,Pongo pygmaeus,Frugivore-Browser,4.9,14.0531,4.24633,12.40414,10.1851,59.11132,Frugivore
+Loxodonta africana,Loxodonta africana,Grazer,3.9,8.9086,2.43334,33.74356,7.61827,47.29621,Herbivore
+Cuniculus paca,Cuniculus paca,Frugivore-Browser,3.9,10.60653,3.31641,15.61663,10.2546,60.2058,Frugivore
+Marmota marmota,Marmota marmota,Browser-Florivore,4.9,12.29211,4.28354,20.27693,8.5824,54.56506,Herbivore
+Dugong dugon,Dugong dugon,Browser-Grazer,4.9,15.66575,2.67402,16.13874,10.42347,55.09804,Frugivore
+Arctocephalus australis,Arctocephalus australis,Piscivore,5.2,76.94024,10.39008,0.35286,11.56014,0.75659,Animalivore
+Ovibos moschatus,Ovibos moschatus,Grazer-Browser,4.1,9.72697,3.07464,30.26407,6.87157,50.06277,Herbivore

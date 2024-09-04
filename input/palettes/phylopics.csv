@@ -1,0 +1,28 @@
+species,search.term,uid,tip.label,id
+Camelus dromedarius,Camelus dromedarius,e52676dd-272c-4b14-8c99-ea5dc98942e5, Dromedary camel (Camelus dromedarius),20
+Capreolus capreolus,Capreolus capreolus,1a8006a1-f578-4dd2-963b-c659208bf9ab, Roe deer (Capreolus capreolus),8
+Cephalophus silvicultor,Cephalophus silvicultor,fc7091f0-9635-4f3f-93e5-84d25d6721e0, Yellow-backed duiker (Cephalophus silvicultor),13
+Giraffa camelopardalis,Giraffa camelopardalis,75d59e42-a606-4f26-b648-46d1098d99fa, Reticulated giraffe (Giraffa camelopardalis),15
+Hippopotamus amphibius,Hippopotamus amphibius,bab03f09-73ba-45ea-8534-ea176c82a1a0, Hippo (Hippopotamus amphibius),18
+Muntiacus muntjak,Cervidae,50b253d3-329f-46bd-b2dd-e85f26aad188, Southern red muntjac (Muntiacus muntjak),7
+Okapia johnstoni,Okapia johnstoni,da601133-a966-43a3-a60f-38632814a3b4, Okapi (Okapia johnstoni),16
+Ovibos moschatus,Ovibos moschatus,b697158f-d535-4a47-973c-9926103f255f, Muskox (Ovibos moschatus),12
+Ovis ammon,Ovis,8b50d880-c31f-42a6-bc71-43fe23a106c1, Argali (Ovis ammon),10
+Ovis aries,Ovis aries,14012740-e356-464b-b84d-fa6c4a0b34a9, Domestic sheep (Ovis aries),11
+Rupicapra rupicapra,Rupicapra,bf013755-e13a-4b36-a833-e02fd9cf4246, Chamois (Rupicapra rupicapra),9
+Sus scrofa,Sus scrofa,87047da1-b40e-4b31-8492-4db262f129f5, Wild boar/Domestic pig  (Sus scrofa),19
+Ceratotherium simum,Ceratotherium simum,623da06a-1857-43a2-9d1b-8a29f5f378cf, White rhino (Ceratotherium simum),24
+Diceros bicornis,Diceros bicornis,6fdf83e3-7155-41d6-b6d1-3fba78bc1a6e, Black rhino (Diceros bicornis),23
+Equus quagga,Equus quagga,3f18d263-3f53-4b88-a496-e21982ddc5ef,NA,NA
+Equus caballus,Equus caballus,9f550f9e-b8df-43c4-9f00-396548507424, Horse (Equus caballus),21
+Tapirus indicus,Tapirus,8f6b8802-52f9-4f16-8429-0b86ea4a4aa8, Malayan tapir (Tapirus indicus),22
+Gorilla beringei,Gorilla,f9bb81be-bd1e-4513-a92e-2cee296fb357, Eastern gorilla (Gorilla beringei),5
+Papio anubis,Papio anubis,071db0d0-20a2-4f1b-9c26-fa20db640664, Olive baboon (Papio anubis),4
+Piliocolobus foai,Piliocolobus,525fde4f-596e-414f-8a2c-0837aa75792c, Foa's red colobus (Piliocolobus foai),3
+Pongo pygmaeus,Pongo pygmaeus,0173bfdd-b5ab-4e8f-9053-b33830690ac5, Bornean orangutan (Pongo pygmaeus),6
+Meles meles,Meles meles,0c32ffbe-26ee-495a-9ec5-adb14ff1444b, European badger (Meles meles),25
+Otaria byronia,Otariidae,6f7f22fc-30a8-44a1-8f8e-1bbef48a2463, South American sea lion (Otaria byronia),27
+Marmota marmota,Marmota monax,eee50efb-40dc-47d0-b2cb-52a14a5e0e51, Alpine marmot (Marmota marmota),2
+Cuniculus paca,Cuniculus paca,b6c7dab1-a2f8-43f6-98d5-ab6000f58957, Lowland paca (Cuniculus paca),1
+Dugong dugon,Sirenia,682fdc38-6437-44a7-8fac-34ec01912d63, Dugong (Dugong dugon),28
+Macropus giganteus,Macropus giganteus,624e3d80-cba2-4465-8f3a-c9ae4025198b, Eastern grey kangaroo (Macropus giganteus),30
