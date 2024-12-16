@@ -1,7 +1,7 @@
-nr,learner_id,regr.mape
-1,regr.featureless,0.190195877088588
-2,regr.kknn,0.154296650997765
-3,regr.lm,0.170324881212947
-4,regr.nnet,0.167158345834443
-5,regr.randomForest,0.161269663503276
-6,regr.ranger,0.156820760822216
+nr,learner_id,regr.mae
+1,regr.featureless,5.052705922586
+2,regr.kknn,4.31806897773557
+3,regr.lm,4.66541433713268
+4,regr.nnet,4.53163843420818
+5,regr.randomForest,4.30678315850839
+6,regr.ranger,4.28863216715062

@@ -1,6 +1,11 @@
-Classification Accuracy,learner
-0.775,regr.featureless
-0.78125,regr.kknn
-0.775,regr.nnet
-0.78125,regr.ranger
-0.775,regr.rpart
+Log Loss,learner,dataset
+0.535466557999369,classif.featureless,test
+0.496960363326106,classif.featureless,train
+0.378052828525577,classif.kknn,test
+0.346550162090592,classif.kknn,train
+0.40881512752753,classif.nnet,test
+0.398892676787356,classif.nnet,train
+0.389926900536869,classif.ranger,test
+0.311108504871446,classif.ranger,train
+0.508650954717951,classif.rpart,test
+0.439815091460585,classif.rpart,train

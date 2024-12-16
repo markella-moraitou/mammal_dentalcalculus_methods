@@ -1,0 +1,6 @@
+nr,learner_id,classif.logloss
+1,classif.featureless,0.625951930064396
+2,classif.kknn,0.623387830602576
+3,classif.nnet,0.544924730577907
+4,classif.ranger,0.495388207965708
+5,classif.rpart,0.59200756832932

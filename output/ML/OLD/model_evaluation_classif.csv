@@ -1,0 +1,11 @@
+Log Loss,learner,dataset
+0.3125,classif.featureless,test
+0.314814814814815,classif.featureless,train
+0.2375,classif.kknn,test
+0.209876543209877,classif.kknn,train
+0.225,classif.nnet,test
+0.243827160493827,classif.nnet,train
+0.21875,classif.ranger,test
+0.169753086419753,classif.ranger,train
+0.2375,classif.rpart,test
+0.20679012345679,classif.rpart,train

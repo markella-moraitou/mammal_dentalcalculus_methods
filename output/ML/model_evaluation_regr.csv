@@ -1,7 +1,13 @@
-Mean Absolute Percent Error,learner
-0.186315515742799,regr.featureless
-0.140778675700581,regr.kknn
-0.15864191831935,regr.lm
-0.15274320293409,regr.nnet
-0.140810314729355,regr.randomForest
-0.135529665909298,regr.ranger
+Mean Absolute Error,learner,dataset
+4.83932116600432,regr.featureless,test
+5.1344589262271,regr.featureless,train
+4.06505611684,regr.kknn,test
+3.51991899798025,regr.kknn,train
+4.36239119528694,regr.lm,test
+4.51576282532296,regr.lm,train
+4.34118011478511,regr.nnet,test
+3.7576726277572,regr.nnet,train
+4.10604789719041,regr.randomForest,test
+3.44668560452579,regr.randomForest,train
+3.99921684649848,regr.ranger,test
+3.45277310128201,regr.ranger,train
