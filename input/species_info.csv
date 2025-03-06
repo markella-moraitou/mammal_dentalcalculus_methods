@@ -1,33 +1,33 @@
 Species,Common.name,habitat.general,order
-Arctocephalus australis,South American fur seals,Aquatic,Carnivora
-Camelus dromedarius,Dromedary camel,Terrestrial,Artiodactyla
+Acrocodia indica,Malayan tapir,Terrestrial,Perissodactyla
+Arctocephalus australis,South American fur seal,Aquatic,Carnivora
+Camelus dromedarius,Arabian camel,Terrestrial,Artiodactyla
 Capreolus capreolus,Roe deer,Terrestrial,Artiodactyla
 Cephalophus silvicultor,Yellow-backed duiker,Terrestrial,Artiodactyla
 Ceratotherium simum,White rhino,Terrestrial,Perissodactyla
-Cuniculus paca,Paca,Terrestrial,Rodentia
+Cuniculus paca,Lowland paca,Terrestrial,Rodentia
 Diceros bicornis,Black rhino,Terrestrial,Perissodactyla
 Dugong dugon,Dugong,Aquatic,Sirenia
-Equus burchellii,Plains zebra,Terrestrial,Perissodactyla
-Equus caballus,Horse,Terrestrial,Perissodactyla
-Giraffa camelopardalis,Reticulated giraffe,Terrestrial,Artiodactyla
+Equus caballus,Domestic horse,Terrestrial,Perissodactyla
+Equus quagga,Plains zebra,Terrestrial,Perissodactyla
+Giraffa camelopardalis,Giraffe,Terrestrial,Artiodactyla
 Gorilla beringei,Eastern gorilla,Terrestrial,Primates
-Hippopotamus amphibius,Hippo,Terrestrial,Artiodactyla
+Hippopotamus amphibius,Hippopotamus,Terrestrial,Artiodactyla
 Loxodonta africana,African elephant,Terrestrial,Proboscidea
 Macropus giganteus,Eastern grey kangaroo,Terrestrial,Diprotodontia
-Marmota marmota,Marmot,Terrestrial,Rodentia
+Marmota marmota,Alpine marmot,Terrestrial,Rodentia
 Meles meles,European badger,Terrestrial,Carnivora
-Muntiacus muntjak,Muntjak,Terrestrial,Artiodactyla
+Muntiacus muntjak,Indian muntjac,Terrestrial,Artiodactyla
 Okapia johnstoni,Okapi,Terrestrial,Artiodactyla
 Orcinus orca,Orca,Aquatic,Artiodactyla
-Otaria byronia,South American sea lion,Aquatic,Carnivora
+Otaria flavescens,South American sea lion,Aquatic,Carnivora
 Ovibos moschatus,Muskox,Terrestrial,Artiodactyla
 Ovis ammon,Argali,Terrestrial,Artiodactyla
-Ovis aries,Sheep,Terrestrial,Artiodactyla
+Ovis aries,Domestic sheep,Terrestrial,Artiodactyla
 Papio anubis,Olive baboon,Terrestrial,Primates
 Piliocolobus foai,Central African red colobus,Terrestrial,Primates
 Pongo pygmaeus,Bornean orangutan,Terrestrial,Primates
 Rupicapra rupicapra,Chamois,Terrestrial,Artiodactyla
-Sus scrofa,Wild boar,Terrestrial,Artiodactyla
-Sus scrofa domesticus,Pig,Terrestrial,Artiodactyla
+Sus domesticus,Domestic pig,Terrestrial,Artiodactyla
+Sus scrofa,European wild pig,Terrestrial,Artiodactyla
 Syncerus caffer,African buffalo,Terrestrial,Artiodactyla
-Tapirus indicus,Malayan tapir,Terrestrial,Perissodactyla
