@@ -1,42 +1,42 @@
 regr.kknn:
-  k: 5
-  distance: 0.7601415
+  k: 6
+  distance: 0.7806979
   kernel: rectangular
 regr.nnet:
-  decay: 2.3024127
-  maxit: 691
-  size: 10
+  decay: 1.7843337
+  maxit: 255
+  size: 16
 regr.randomForest:
   replace: no
-  ntree: 876
+  ntree: 248
   mtry: 2
-  nodesize: 13
+  nodesize: 14
   maxnodes: 30
 regr.ranger:
   importance: impurity
   num.threads: 1
-  max.depth: 8
-  min.node.size: 7
+  max.depth: 20
+  min.node.size: 5
   mtry: 6
-  num.trees: 668
-  sample.fraction: 0.9762137
+  num.trees: 257
+  sample.fraction: 0.9401564
   splitrule: maxstat
 classif.kknn:
-  k: 25
-  distance: 1.0961305
-  kernel: epanechnikov
+  k: 30
+  distance: 2.3146202
+  kernel: triangular
 classif.nnet:
-  decay: 0.3155303
-  maxit: 128
-  size: 13
+  decay: 0.3069744
+  maxit: 980
+  size: 10
 classif.ranger:
   importance: impurity
   num.threads: 1
-  max.depth: 14
-  min.node.size: 18
-  mtry: 5
-  num.trees: 953
-  sample.fraction: 0.7553474
+  max.depth: 18
+  min.node.size: 20
+  mtry: 3
+  num.trees: 985
+  sample.fraction: 0.8864203
   splitrule: extratrees
 classif.rpart:
   xval: 0

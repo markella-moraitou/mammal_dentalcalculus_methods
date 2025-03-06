@@ -1,13 +1,13 @@
 Mean Absolute Error,learner,dataset
-4.83932116600432,regr.featureless,test
-5.1344589262271,regr.featureless,train
-4.06505611684,regr.kknn,test
-3.51991899798025,regr.kknn,train
-4.36239119528694,regr.lm,test
-4.51576282532296,regr.lm,train
-4.34118011478511,regr.nnet,test
-3.7576726277572,regr.nnet,train
-4.10604789719041,regr.randomForest,test
-3.44668560452579,regr.randomForest,train
-3.99921684649848,regr.ranger,test
-3.45277310128201,regr.ranger,train
+4.83011123221733,regr.featureless,test
+5.13505156650366,regr.featureless,train
+4.15373619324109,regr.kknn,test
+3.5403077917037,regr.kknn,train
+4.35976340755607,regr.lm,test
+4.50661279208057,regr.lm,train
+4.12920620811806,regr.nnet,test
+3.59796220717221,regr.nnet,train
+4.06342430806867,regr.randomForest,test
+3.44486906649477,regr.randomForest,train
+3.97455837669414,regr.ranger,test
+3.34238212560706,regr.ranger,train

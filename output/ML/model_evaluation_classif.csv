@@ -1,11 +1,11 @@
 Log Loss,learner,dataset
-0.535466557999369,classif.featureless,test
-0.496960363326106,classif.featureless,train
-0.378052828525577,classif.kknn,test
-0.346550162090592,classif.kknn,train
-0.40881512752753,classif.nnet,test
-0.398892676787356,classif.nnet,train
-0.389926900536869,classif.ranger,test
-0.311108504871446,classif.ranger,train
-0.508650954717951,classif.rpart,test
-0.439815091460585,classif.rpart,train
+0.577525114765313,classif.featureless,test
+0.479165623928275,classif.featureless,train
+0.407013478917353,classif.kknn,test
+0.316386618020472,classif.kknn,train
+0.450315873654579,classif.nnet,test
+0.385052790064413,classif.nnet,train
+0.4268223287187,classif.ranger,test
+0.30287241615148,classif.ranger,train
+0.545045466717715,classif.rpart,test
+0.423714034739353,classif.rpart,train
