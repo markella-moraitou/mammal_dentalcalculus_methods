@@ -1,33 +1,33 @@
 Common.name,Species,order,diet_category,n_extracted,n_barcoded,n_indexed
 African buffalo,Syncerus caffer,Artiodactyla,Herbivore,10,10,8
 African elephant,Loxodonta africana,Proboscidea,Herbivore,15,13,13
+Alpine marmot,Marmota marmota,Rodentia,Herbivore,13,13,13
+Arabian camel,Camelus dromedarius,Artiodactyla,Herbivore,9,9,9
 Argali,Ovis ammon,Artiodactyla,Herbivore,11,11,11
 Black rhino,Diceros bicornis,Perissodactyla,Herbivore,2,2,2
 Bornean orangutan,Pongo pygmaeus,Primates,Frugivore,6,6,4
 Central African red colobus,Piliocolobus foai,Primates,Frugivore,26,26,26
 Chamois,Rupicapra rupicapra,Artiodactyla,Herbivore,27,27,24
-Dromedary camel,Camelus dromedarius,Artiodactyla,Herbivore,9,9,9
+Domestic horse,Equus caballus,Perissodactyla,Herbivore,6,6,6
+Domestic pig,Sus domesticus,Artiodactyla,Frugivore,13,13,13
+Domestic sheep,Ovis aries,Artiodactyla,Herbivore,46,45,42
 Dugong,Dugong dugon,Sirenia,Frugivore,5,5,5
 Eastern gorilla,Gorilla beringei,Primates,Herbivore,9,9,9
 Eastern grey kangaroo,Macropus giganteus,Diprotodontia,Herbivore,14,14,14
 European badger,Meles meles,Carnivora,Animalivore,39,39,39
-Hippo,Hippopotamus amphibius,Artiodactyla,Herbivore,13,11,11
-Horse,Equus caballus,Perissodactyla,Herbivore,6,6,6
-Malayan tapir,Tapirus indicus,Perissodactyla,Frugivore,8,8,7
-Marmot,Marmota marmota,Rodentia,Herbivore,13,13,13
-Muntjak,Muntiacus muntjak,Artiodactyla,Frugivore,13,13,12
+European wild pig,Sus scrofa,Artiodactyla,Frugivore,26,26,26
+Giraffe,Giraffa camelopardalis,Artiodactyla,Frugivore,15,15,14
+Hippopotamus,Hippopotamus amphibius,Artiodactyla,Herbivore,13,11,11
+Indian muntjac,Muntiacus muntjak,Artiodactyla,Frugivore,13,13,12
+Lowland paca,Cuniculus paca,Rodentia,Frugivore,13,12,12
+Malayan tapir,Acrocodia indica,Perissodactyla,Frugivore,8,8,7
 Muskox,Ovibos moschatus,Artiodactyla,Herbivore,6,4,0
 Okapi,Okapia johnstoni,Artiodactyla,Herbivore,14,14,12
 Olive baboon,Papio anubis,Primates,Frugivore,21,21,21
-Orca,Orcinus orca,Artiodactyla,Animalivore,5,5,5
-Paca,Cuniculus paca,Rodentia,Frugivore,13,12,12
-Pig,Sus scrofa domesticus,Artiodactyla,Frugivore,13,13,13
-Plains zebra,Equus burchellii,Perissodactyla,Herbivore,27,27,27
-Reticulated giraffe,Giraffa camelopardalis,Artiodactyla,Frugivore,15,15,14
+Orca,Orcinus orca,Artiodactyla,Animalivore,4,4,4
+Plains zebra,Equus quagga,Perissodactyla,Herbivore,27,27,27
 Roe deer,Capreolus capreolus,Artiodactyla,Herbivore,49,49,47
-Sheep,Ovis aries,Artiodactyla,Herbivore,46,45,42
-South American fur seals,Arctocephalus australis,Carnivora,Animalivore,1,1,0
-South American sea lion,Otaria byronia,Carnivora,Animalivore,16,14,14
+South American fur seal,Arctocephalus australis,Carnivora,Animalivore,1,1,0
+South American sea lion,Otaria flavescens,Carnivora,Animalivore,16,14,14
 White rhino,Ceratotherium simum,Perissodactyla,Herbivore,13,13,13
-Wild boar,Sus scrofa,Artiodactyla,Frugivore,26,26,26
 Yellow-backed duiker,Cephalophus silvicultor,Artiodactyla,Frugivore,25,25,25

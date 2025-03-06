@@ -1,5 +1,5 @@
 order,diet_category,n_samples,n_species
-Artiodactyla,Animalivore,5,1
+Artiodactyla,Animalivore,4,1
 Artiodactyla,Frugivore,92,5
 Artiodactyla,Herbivore,185,9
 Carnivora,Animalivore,56,3
