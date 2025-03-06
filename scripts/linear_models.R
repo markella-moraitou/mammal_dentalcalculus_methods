@@ -90,7 +90,7 @@ data <- as_tibble(data) %>%
          # Add a pseudocount on weight
          Sample.weight.g. = case_when(is.na(Sample.weight.g.) ~ 0, TRUE ~ Sample.weight.g.) + 0.001,
          Species = factor(Species, levels = sp_levels),
-         calculated_species_main_diet = factor(calculated_species_main_diet, levels = c("Herbivore", "Frugivore", "Animalivore", "Undefined")),
+         calculated_species_main_diet = factor(calculated_species_main_diet, levels = c("Herbivore", "Frugivore", "Animalivore")),
          Sample.weight.mg = Sample.weight.g. * 1000) %>%
   # Make sure batches are read as integers
   mutate(Ext.Date = as.character(Ext.Date),
@@ -98,7 +98,7 @@ data <- as_tibble(data) %>%
          Ind.date = as.character(Ind.date))
 
 diet <- diet %>%
-  mutate(calculated_species_main_diet = factor(calculated_species_main_diet, levels = c("Herbivore", "Frugivore", "Animalivore", "Undefined")))
+  mutate(calculated_species_main_diet = factor(calculated_species_main_diet, levels = c("Herbivore", "Frugivore", "Animalivore")))
 
 # Calculate some variables we need
 
@@ -143,7 +143,7 @@ flow <- data.frame(x = rep(c(1, 1, 2), 4),
                    y = c(1, 2, 2, 3, 4, 4, 5, 6, 6, 7, 8, 8),
                    type = rep(c("Protocol step", "Quantification", "Value"), 4),
                    group = c(rep("Sample", 3), rep("DNA", 3), rep("Barcoding", 3), rep("Indexing", 3)),
-                   name = c("Sampling", "Weighing", "Weight (ug)",
+                   name = c("Sampling", "Weighing", "Weight (mg)",
                             "DNA extraction", "Qubit dsDNA HS Assay", "DNA amount (μg)",
                             "Barcoding", "Post-barcoding qPCR","Barcoded libraries (molecules)",
                             "Indexing", "Post-indexing qPCR", "Indexed libraries (molecules)"))
@@ -199,7 +199,7 @@ labels <- ord$x %>% as.data.frame %>% mutate(label = case_when(PC1 > 10 ~ rownam
 
 # Plot
 pca <- ggplot(aes(x = PC1_scaled, y = PC2_scaled, colour=diet$calculated_species_main_diet), data = ord_df) +
-  geom_point(size=3) +
+  geom_point(size=3, alpha = 0.8) +
   scale_colour_manual(values = diet2_palette, name = "Dietary category") +
   xlab(paste("scaled PC1 -", var_explained[1], "%")) +
   ylab(paste("scaled PC2 -", var_explained[2], "%")) +
@@ -207,8 +207,9 @@ pca <- ggplot(aes(x = PC1_scaled, y = PC2_scaled, colour=diet$calculated_species
                                        yend = PC2_scaled), arrow = arrow(length = unit(0.5, "picas")),
                color = "black") +
   theme_bw_alt + theme(legend.position = "bottom") +
-  annotate("text", x = loadings_matrix$PC1_scaled, y = loadings_matrix$PC2_scaled,
-           label = loadings_matrix$Variables, size = 6) +
+  annotate("text", x = loadings_matrix$PC1_scaled + ifelse(loadings_matrix$Variables=="cf", -0.2, 0),
+           y = loadings_matrix$PC2_scaled + ifelse(loadings_matrix$Variables=="ee", 0.1, 0),
+           label = loadings_matrix$Variables, size = 8, alpha = 0.8) +
   labs(tag = "A.")
 
 pca
@@ -235,9 +236,9 @@ set.seed(60)
 pca <- 
   pca + geom_point(size=3, aes(colour = diet$diet_category)) +
   scale_colour_manual(values = diet2_palette[unique(as.character(diet$diet_category))], name = "Dietary category") +
-  geom_text(label = labels, size = 5, hjust = 0.5, position = position_jitter(height = 0.1, width = 0),
+  geom_text(label = labels, size = 6, hjust = 0.5, position = position_jitter(height = 0.1, width = 0),
             aes(x = PC1_scaled, colour = diet$diet_category)) +
-    xlim(-1, 3.5)
+    xlim(-1, 4)
 
 pca
 
@@ -312,16 +313,17 @@ summ_dat <- summ_dat %>% mutate(lab_col = case_when(n_samples < 25 ~ "black", TR
 p_summary <-
   ggplot(aes(x = diet_category, y = order, size = n_species, fill = n_samples), data = summ_dat) +
   geom_point(shape = 21, colour = "black") +
-  theme_void_alt +
+  theme_void_alt + theme(legend.title.position = "top") +
   xlab("Dietary category") + ylab("Taxonomic order") +
   labs(tag = "B.") +
-  scale_fill_continuous(low = "lightblue", high = "darkblue", name = "Sample number", trans = "log", breaks = c(5, 25, 125)) +
-  scale_size(range  =  c(12, 30), breaks = c(min(summ_dat$n_species), mean(unique(summ_dat$n_species)), max(summ_dat$n_species)),
+  scale_fill_continuous(low = "lightblue", high = "darkblue", name = "Sample number", trans = "log", breaks = c(5, 25, 125), 
+                        guide = guide_colourbar(direction = "horizontal")) +
+  scale_size(range  =  c(15, 35), breaks = c(min(summ_dat$n_species), mean(unique(summ_dat$n_species)), max(summ_dat$n_species)),
              name = "Species number") +
   new_scale(new_aes = "size") +
   geom_text(aes(label = paste0(n_species, " (", n_samples, ")"), x = diet_category, y = order, colour = lab_col, size = n_species), fontface = "bold") +
   scale_colour_manual(values = summ_dat$lab_col, guide = "none") +
-  scale_size_continuous(range = c(3, 6), guide = "none")
+  scale_size_continuous(range = c(4, 8), guide = "none")
 
 p_summary
 
@@ -471,7 +473,7 @@ p_m1 <-
   scale_color_manual(values = diet2_palette, name = "Dietary category") +
   #scale_colour_manual(values = diet_palette, name = "Dietary category") +
   scale_shape_manual(values = c(16, 1), name = "Pigmented extract") +
-  xlab("Sample weight (mg)") + ylab("DNA output (mg)") +
+  xlab("Sample weight (mg)") + ylab("DNA output (μg)") +
   theme_bw_alt +
   labs(tag = "A.")
 
@@ -539,7 +541,7 @@ model1_box <-
   stat_compare_means(comparisons = list(c("Herbivore", "Frugivore"), c("Frugivore", "Animalivore"), c("Herbivore", "Animalivore")),
                      label = "p.signif", method = "wilcox", size = 8) +
   stat_compare_means(label.y = 0.15, label.x = 1.3, size = 8, method = "kruskal.test") +
-  ylab("DNA yield (proportion of sample weight)") + xlab("Dietary category") +
+  ylab("DNA yield (μg per mg of dental calculus)") + xlab("Dietary category") +
   theme_bw_alt + theme(legend.position = "none") +
   labs(tag = "B.")
 
@@ -842,11 +844,10 @@ model4_box <-
 
 model4_box
 
-
 #### Host vs Microbiome reads ####
 
 filt_dat_h <- filt_dat %>% filter(!is.na(host_count)) %>%
-  dplyr::select(Ext.ID, PC1, PC2, Pigmented_extract, Species, order, diet_category, host_count, unmapped_count) %>%
+  dplyr::select(Ext.ID, PC1, PC2, Pigmented_extract, Species, Common.name, order, diet_category, host_count, unmapped_count) %>%
   # Calculate host proportion ratio
   mutate(filtered_count = host_count + unmapped_count) %>% # This is the number of reads after preprecessing but before mapping
   mutate(host_perc = host_count / filtered_count) %>%
@@ -865,8 +866,9 @@ mean_host <- mean(filt_dat_h$host_perc)
 
 # Plot boxplot
 p_h <-
-  ggplot(aes(y = host_perc + 0.01, x = Species, colour = diet_category), data = filt_dat_h) +
-  geom_boxplot(alpha = 0.5) +
+  ggplot(aes(y = host_perc + 0.01, x = Common.name, colour = diet_category), data = filt_dat_h) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(alpha = 0.2, width = 0.2, height = 0.2) +
   geom_hline(yintercept = mean_host, linetype = "dashed") +
   scale_colour_manual(values = diet2_palette, name = "Dietary category") +
   theme_bw_alt + theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position = "top",
@@ -941,7 +943,7 @@ decom_comp <- filt_dat %>% dplyr::select(Ext.ID, Common.name, order, diet_catego
   # Keep only samples with decOM results
   filter(!is.na(p_Unknown)) %>%
   # Remove species with less than 5 samples
-  group_by(Common.name) %>% filter(n_distinct(Ext.ID) >= 5) %>% 
+  group_by(Common.name) %>% filter(n_distinct(Ext.ID) >= 4) %>% 
   #Calculate sum of ancient and modern oral microbiome 
   mutate(oral_prop = (p_aOral + p_mOral),
          contam_prop = (p_Skin + p_Sediment.Soil)) %>%

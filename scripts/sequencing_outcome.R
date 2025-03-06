@@ -60,6 +60,7 @@ pool_info <- data.frame(name=c("Pool A", "Pool B", "Pool C", "Pool D"),
 #indexing_final_vol_ul = 20
 
 seq_data <- filt_dat %>% filter(!is.na(raw_count) & raw_count!=0) %>%
+  select(-c(Collection.notes, Country, Region, Locality, Sampling.comments, Appearance)) %>%
   mutate(failed_indexing = (ind_output_copies < 10^9)) %>%
   # Add info about pool volume and seq output
   full_join(pool_info, by=c("Pool"="name")) %>% 
@@ -179,3 +180,4 @@ ggsave(species_discovery_bin, file = file.path(outdir, "species_discovery_binned
 # Save table
 write.csv(seq_data, file = file.path(outdir, "seq_data.csv"), quote = FALSE, row.names = FALSE)
 write.csv(binned_seq_data, file = file.path(outdir, "binned_seq_data.csv"), quote = FALSE, row.names = FALSE)
+
