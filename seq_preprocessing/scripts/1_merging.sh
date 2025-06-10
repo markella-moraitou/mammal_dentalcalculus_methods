@@ -1,14 +1,13 @@
 #!/bin/bash -l
 
-#SBATCH -n 20
-#SBATCH -t 12:00:00
-#SBATCH -J trimming
+#SBATCH -n 12
+#SBATCH -t 3:00:00
+#SBATCH -J merging
 #SBATCH --output=logs/job-%x.%j.out
 #SBATCH --error=logs/job-%x.%j.err
 
-# Trimming reads
-# Trims poly-G and poly-X tails (resulting from NovaSeq two-colour chemistry), low-quality bases and Ns (sliding windows of 3)
-# Removes adapters and barcodes
+# Merging reads
+# Also, filters out sequences less than 30 bp
 
 ################
 #### SET UP ####
@@ -20,15 +19,14 @@
 ## Define paths
 source ../config.txt # Should contain the paths for the raw data, the intermediate output, the project directory, the references and the conda env
 
-echo "Raw data dir: ${RAWDIR}"
 echo "Project dir: ${PROJDIR}"
 echo "Reference dir: ${REFDIR}"
 
 indir=${PROJDIR}/input/ # Directory where the provided input is located
 scriptdir=${PROJDIR}/scripts/ # Directory where the scripts are saved
 outdir=${PROJDIR}/output/ # Output directory
-subdir=${outdir}/0_submitted_seqs
-demultdir=${outdir}/0_demultiplexed_seqs/
+seqdir=${outdir}/0_submitted_seqs
+subdir=${outdir}/1_merged_seqs
 
 [ -d $subdir ] || mkdir $subdir # Create subdir if not there
 [ -d ${scriptdir}/logs ] || mkdir ${scriptdir}/logs # Create directory for script logs if not there
@@ -70,29 +68,32 @@ cd $subdir/
 # Process samples in provided samples list - First filter for the newly generated data
 tail -n+2 ${sample_list} | while IFS=, read -r sample species fwd_path rev_path
 do
-  fwd_file=$demultdir/${sample}_run1_F.fastq.gz
-  rev_file=$demultdir/${sample}_run1_R.fastq.gz
+  fwd_file=${seqdir}/${sample}_trimmed_F.fastq.gz
+  rev_file=${seqdir}/${sample}_trimmed_R.fastq.gz
   if [[ ! -f $fwd_file || ! -f $rev_file ]]; then
     echo "Input file(s) missing for $sample"
   fi
   
   echo "Processing $sample"
-  # Process with fastq
-  # --trim_poly_g: removes low quality reads (both sides, mean quality 30, window size 3)and poly-G tails (due to NovaSeq 2-colour chemistry)
-  # -3 --cut_tail_window_size 3 --cut_tail_mean_quality 30: trim seqs with qual < 30 in sliding windows from 3'
-  # --adapter_fasta: specify adapter sequences (Ns not allowed, so I need to specify one for each index)
-  # --trim_front1 7 and --trim_front2 7: remove barcodes by trimming the first 7 nucleotides from both forward and reverse
+  # --merge, --overlap_len_require 11 and --overlap_diff_limit 3: merge F and R if there is at least 11 of overlap with at most 3 mismatches (probability of this happening at random <1%)
+  # --length_required 30: filters out reads shorter than 30
+  # Saving merged reads in one file
+  # and unpaired F and R in separate files (regardless if they could not be merged or if the other mate failed the filters)
   fastp \
     --in1 $fwd_file \
     --in2 $rev_file \
-    --out1 ${subdir}/${sample}_trimmed_F.fastq.gz \
-    --out2 ${subdir}/${sample}_trimmed_R.fastq.gz \
-    --trim_poly_g \
-    --trim_poly_x \
-    -3 --cut_tail_window_size 3 --cut_tail_mean_quality 30 \
-    --adapter_fasta ${indir}/adapter_seqs.fasta \
-    --trim_front1 7 \
-    --trim_front2 7 \
+    --merge \
+    --merged_out ${subdir}/${sample}_merged.fastq.gz \
+    --unpaired1 ${subdir}/${sample}_unpaired_F.fastq.gz \
+    --out1 ${subdir}/${sample}_unmerged_F.fastq.gz \
+    --unpaired2 ${subdir}/${sample}_unpaired_R.fastq.gz \
+    --out2 ${subdir}/${sample}_unmerged_R.fastq.gz \
+    --overlap_len_require 11 \
+    --overlap_diff_limit 3 \
+    --dedup \
+    --disable_adapter_trimming \
+    --disable_quality_filtering \
+    --disable_trim_poly_g \
     --json ${sample}.fastp.json  \
     --html ${sample}.fastp.html  \
     --thread $n_proc
@@ -112,33 +113,17 @@ done
 ## Get QC reports for each type of output
 
 # Run FastQC
-fastqc *_trimmed*.fastq.gz -f fastq -o . -t $n_proc
+fastqc *_merged*.fastq.gz -f fastq -o . -t $n_proc
 
 # Generate MultiQC report
-multiqc *.zip -f --interactive --title "trimmed"
+multiqc *.zip -f --interactive --title "merged"
 rm -f *fastqc*
 
-## Get average read length and count per sample (both runs combined)
-# Average length and count tables combined for the two runs
+# Get correct sample names
+sed "s/_merged//g" merged_multiqc_report_data/multiqc_fastqc.txt > merged_general_stats.tmp
 
-echo "sample,submitted_F,submitted_R" > ${outdir}/read_length.csv
-echo "sample,submitted_F,submitted_R" > ${outdir}/read_count.csv
+# Run python script
+python $scriptdir/modules/multiqc_to_csv.py merged_general_stats.tmp ${outdir}/read_count.csv "Total Sequences" "merged"
+python $scriptdir/modules/multiqc_to_csv.py merged_general_stats.tmp ${outdir}/read_length.csv "avg_sequence_length" "merged"
 
-ls *_trimmed_F.fastq.gz | while read fwd_file
-do
-  fwd=$(basename ${fwd_file%.fastq.gz})
-  sample=${fwd%_trimmed_F}
-  rev=${sample}_trimmed_R
-  
-  # Get number of reads from multiqc_data
-  rc_F=$(grep "^$fwd" trimmed_multiqc_report_data/multiqc_fastqc.txt | awk -v FS="\t" '{print $5}')
-  rc_R=$(grep "^$rev" trimmed_multiqc_report_data/multiqc_fastqc.txt | awk -v FS="\t" '{print $5}')
-  
-  rl_F=$(grep "^$fwd" trimmed_multiqc_report_data/multiqc_fastqc.txt | awk -v FS="\t" '{print $11}')
-  rl_R=$(grep "^$rev" trimmed_multiqc_report_data/multiqc_fastqc.txt | awk -v FS="\t" '{print $11}')
-
-  # Add to file
-  echo "$sample,$rc_F,$rc_R" >> ${outdir}/read_count.csv
-  echo "$sample,$rl_F,$rl_R" >> ${outdir}/read_length.csv
-done
-
+rm *tmp
