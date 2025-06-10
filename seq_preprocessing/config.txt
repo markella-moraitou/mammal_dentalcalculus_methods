@@ -1,0 +1,10 @@
+# Define paths to use
+
+# Raw multiplexed sequences
+export RAWDIR=/cfs/klemming/projects/snic/sllstore2017021/SEQDATA/DENTAL_CALCULUS/raw_data/
+
+# Project directory
+export PROJDIR=$(realpath ..)
+
+# Reference genomes
+export REFDIR=$(realpath ../references/)

@@ -4,15 +4,6 @@
 Dental calculus metagenomics has emerged as a valuable tool for studying the oral microbiomes of humans, other primates, and a few select mammals. With increasing interest in wild animal microbiomes, it is important to understand how widely this material can be used across the mammalian tree of life, refine the related protocols and understand the expected outcomes and potential challenges of dental calculus sample processing. In this study we significantly expand the breadth of studied host species, analysing laboratory and bioinformatics metadata of dental calculus samples from 32 ecologically and phylogenetically diverse mammals. While we confirm the presence of an oral microbiome signature in the metagenomes of all studied mammals, the fraction recognised as oral varies between host species, possibly due to both biological differences and methodological biases. The overall success rate of dental calculus processing, from extractions to sequencing, was >74%. Although input sample weight was positively associated with the number of produced library molecules, we identify a negative impact of enzymatic inhibition on the library preparation protocol. The inhibition was most prevalent in herbivores and frugivores and is likely diet-derived. In contrast, hosts with an animalivore diet posed fewer challenges during laboratory processing, and yielded more DNA relative to sample weight. Our results translate into recommendations for future studies of dental calculus metagenomics from a variety of host species, identifying required sample amounts, and emphasising the utility of dental calculus in exploring the oral microbiome in relation to broader ecological and evolutionary questions.
 
 ### Directory structure
-```mermaid
-graph TB;
-    A[.]-->B[input];
-    A-->C[output];
-    A-->D[scripts];
-    C-->E[LM];
-    C-->F[ML];
-    C-->G[SEQ];
-    E---oH@{ shape: braces, label: "linear_models.R output"};
-    F---oI@{ shape: braces, label: "machine_learning.R output"};
-    G---oJ@{ shape: braces, label: "sequencing_outcome.R output"};
-```
+**seq_preprocessing** : Preprocessing of metagenomic reads
+
+**stat_analysis** : Statistical analysis of output from *seq_preprocessing* 
