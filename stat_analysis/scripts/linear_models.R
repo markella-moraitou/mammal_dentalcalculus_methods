@@ -16,6 +16,7 @@ library(ggnewscale)
 library(vegan)
 library(lme4)
 library(lmerTest)
+library(car)
 library(blmeco)
 library(FDB1)
 library(ggfortify)
@@ -26,9 +27,6 @@ library(EcolUtils)
 library(scales)
 
 #### VARIABLES AND WORKING DIRECTORY ####
-# Make sure working directory is correctly set
-wd <- here()
-setwd(wd)
 
 # Directory paths
 indir <- normalizePath(file.path("..","input"))
@@ -95,7 +93,12 @@ data <- as_tibble(data) %>%
   # Make sure batches are read as integers
   mutate(Ext.Date = as.character(Ext.Date),
          LP.date = as.character(LP.date),
-         Ind.date = as.character(Ind.date))
+         Ind.date = as.character(Ind.date)) %>%
+  # Get collection year as numeric (so we can test for the effect of sample age)
+  mutate(Year_most_recent = case_when(is.na(as.numeric(Year)) ~ as.numeric(str_remove_all(Year, "<|\\?| \\(received\\)|[0-9][0-9][0-9][0-9]-")), TRUE ~ as.numeric(Year))) %>%
+  mutate(Age_approximated = (Year != Year_most_recent)) %>%
+  mutate(Age = 2023-Year_most_recent,
+        Year_most_recent = NULL)
 
 diet <- diet %>%
   mutate(calculated_species_main_diet = factor(calculated_species_main_diet, levels = c("Herbivore", "Frugivore", "Animalivore")))
@@ -498,6 +501,7 @@ diagn_1 <- diagnose_lmm(mm1)
 ggsave(filename  =  file.path(outdir, "diagnostics_mmodel1.png"), plot_grid(plotlist = diagn_1),
        width  =  14, height = 14)
 
+vif(mm1)
 shapiro.test(residuals(mm1))
 hist(residuals(mm1))
 s1 <- summary(mm1)
@@ -579,6 +583,31 @@ diet_to_conc <- plot_grid(model1_box, pc1_box, pc2_box,
 
 ggsave(filename  =  file.path(outdir, "diet_to_DNA_yield.png"), diet_to_conc, width  =  16, height = 8)
 
+## Consider effect of age (for subset of samples with collection year)
+filt_dat1_age <- filt_dat1 %>% filter(!is.na(Age))
+
+lm1_age = lm(DNA_output_ug ~
+             Sample.weight.mg + Sample.weight.mg:PC1_scaled + Sample.weight.mg:PC2_scaled + Sample.weight.mg:Pigmented_extract + Age,
+           data = filt_dat1_age)
+
+# Extract weights
+weights <- 1 / lm(abs(lm1_age$residuals) ~ lm1_age$fitted.values)$fitted.values^2
+
+mm1_age = lmer(DNA_output_ug ~
+             Sample.weight.mg + Sample.weight.mg:PC1_scaled + Sample.weight.mg:PC2_scaled + Sample.weight.mg:Pigmented_extract + Age +
+              (0 + Sample.weight.mg | Species) + (0 + Sample.weight.mg| Ext.Date),
+            data = filt_dat1_age, weights = weights)
+
+# Plot diagnostics
+diagn_1_age <- diagnose_lmm(mm1_age)
+
+ggsave(filename  =  file.path(outdir, "diagnostics_mmodel1_age.png"), plot_grid(plotlist = diagn_1),
+       width  =  14, height = 14)
+
+vif(mm1_age)
+shapiro.test(residuals(mm1_age))
+hist(residuals(mm1_age))
+
 #### 2. Concentration - LP copy numbers ####
 
 filt_dat2 <- filt_dat %>%
@@ -620,6 +649,7 @@ diagn_2 <- diagnose_lmm(mm2)
 ggsave(filename  =  file.path(outdir, "diagnostics_mmodel2.png"), plot_grid(plotlist = diagn_2),
        width  =  14, height = 14)
 
+vif(mm2)
 shapiro.test(residuals(mm2))
 hist(residuals(mm2))
 
@@ -678,6 +708,32 @@ ggsave(filename  =  file.path(outdir, "model2_boxplot.png"), model2_box, width  
 
 kruskal.test(data = filt_dat2, Library_yield ~ Pigmented_extract)
 kruskal.test(data = filt_dat2, Library_yield ~ diet_category)
+
+## Consider effect of age (for subset of samples with collection year)
+filt_dat2_age <- filt_dat2 %>% filter(!is.na(Age))
+
+# Simple linear model
+lm2_age = lm(bc_output_e10 ~
+           DNA_input_ug + DNA_input_ug:PC1_scaled + DNA_input_ug:PC2_scaled + DNA_input_ug:Pigmented_extract + Age,
+         data = filt_dat2_age)
+
+# Extract weights
+weights <- 1 / lm(abs(lm2_age$residuals) ~ lm2_age$fitted.values)$fitted.values^2
+
+mm2_age <-  lmer(bc_output_e10 ~
+               DNA_input_ug + DNA_input_ug:PC1_scaled + DNA_input_ug:PC2_scaled + DNA_input_ug:Pigmented_extract + Age +
+               (0 + DNA_input_ug | Species) + (0 + DNA_input_ug | LP.date),
+              data = filt_dat2_age, weights = weights)
+
+# Plot diagnostics
+diagn_2_age <- diagnose_lmm(mm2_age)
+
+ggsave(filename  =  file.path(outdir, "diagnostics_mmodel2_age.png"), plot_grid(plotlist = diagn_1),
+       width  =  14, height = 14)
+
+vif(mm2_age)
+shapiro.test(residuals(mm2_age))
+hist(residuals(mm2_age))
 
 #### 3. Theoretic - Real ind numbers ####
 
@@ -780,6 +836,32 @@ ggsave(filename  =  file.path(outdir, "model2_3_boxplots.png"),
 
 kruskal.test(data = filt_dat3, efficiency ~ Pigmented_extract)
 kruskal.test(data = filt_dat3, efficiency ~ diet_category)
+
+## Consider effect of age (for subset of samples with collection year)
+filt_dat3_age <- filt_dat3 %>% filter(!is.na(Age))
+
+# Simple linear model
+lm3_age = lm(observed_e10 ~
+           expected_e10 + expected_e10:PC1_scaled + expected_e10:PC2_scaled + expected_e10:Pigmented_extract + Age,
+         data = filt_dat3_age)
+
+# Extract weights
+weights <- 1 / lm(abs(lm3_age$residuals) ~ lm3_age$fitted.values)$fitted.values^2
+
+mm3_age <-  lmer(observed_e10 ~
+               expected_e10 + expected_e10:PC1_scaled + expected_e10:PC2_scaled + expected_e10:Pigmented_extract + Age +
+               (0 + expected_e10 | Species) + (0 + expected_e10 | Ind.date),
+             data = filt_dat3_age, weights = weights)
+
+# Plot diagnostics
+diagn_3_age <- diagnose_lmm(mm3_age)
+
+ggsave(filename  =  file.path(outdir, "diagnostics_mmodel3_age.png"), plot_grid(plotlist = diagn_1),
+       width  =  14, height = 14)
+
+vif(mm3_age)
+shapiro.test(residuals(mm3_age))
+hist(residuals(mm3_age))
 
 #### 4. Weight - Ind numbers (not sure abou this bit) ####
 
