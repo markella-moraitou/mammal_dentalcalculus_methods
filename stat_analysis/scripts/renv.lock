@@ -1,6 +1,6 @@
 {
   "R": {
-    "Version": "4.4.1",
+    "Version": "4.4.2",
     "Repositories": [
       {
         "Name": "CRAN",
@@ -453,17 +453,6 @@
         "R"
       ],
       "Hash": "ac6cdb8552c61bd36b0e54d07cf2aab7"
-    },
-    "catboost": {
-      "Package": "catboost",
-      "Version": "1.2.5",
-      "Source": "URL",
-      "RemoteType": "url",
-      "RemoteUrl": "https://github.com/catboost/catboost/releases/download/v1.2.5/catboost-R-windows-x86_64-1.2.5.tgz",
-      "Requirements": [
-        "jsonlite"
-      ],
-      "Hash": "4adae97134bb63284773405759707454"
     },
     "checkmate": {
       "Package": "checkmate",
