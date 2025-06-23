@@ -2,7 +2,7 @@
 
 #SBATCH -n 30
 #SBATCH --mem 60GB
-#SBATCH -t 2:00:00
+#SBATCH -t 3:00:00
 #SBATCH -J decOM_matrix
 #SBATCH --output=logs/job-%x.%j.out
 #SBATCH --error=logs/job-%x.%j.err
@@ -34,11 +34,11 @@ cd $sourcedir/sequences
 #### CREATE MATRIX ####
 #######################
 
-#echo "Running kmtricks pipeline"
-#kmtricks pipeline --file kmtricks.fof --run-dir ../p_sources --mode kmer:pa:bin --restrict-to-list 1
+echo "Running kmtricks pipeline"
+kmtricks pipeline --file kmtricks.fof --run-dir ../p_sources --mode kmer:pa:bin --restrict-to-list 1
 
-#echo "Running kmtricks aggregate"
-#kmtricks aggregate --run-dir ../p_sources --pa-matrix kmer --output ../p_sources/matrices/matrix.pa --format bin
+echo "Running kmtricks aggregate"
+kmtricks aggregate --run-dir ../p_sources --pa-matrix kmer --output ../p_sources/matrices/matrix.pa --format bin
 
 echo "Running kmtricks dump"
 kmtricks dump --run-dir ../p_sources --input ../p_sources/matrices/matrix.pa -o ../p_sources/matrices/matrix.pa.txt
