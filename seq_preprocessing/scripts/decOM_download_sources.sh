@@ -47,7 +47,7 @@ cd $sourcedir
 cd sequences
 
 # Parse decOM sources and download files
-while IFS=',' read -r acc source; do
+while IFS=',' read -r acc source _ _; do
     # Skip header line
     [[ "$acc" == "SampleID" || "$source" == "Env" ]] && continue
     # Check if any files with the accession number already exist
