@@ -105,7 +105,7 @@ done
 
 echo "SampleID,Env" > $decom_in/map.csv # Header for the mapping file
 
-cat $indir/decOM_sources.csv | while IFS=, read -r sample env
+cat $indir/decOM_sources.csv | while IFS=, read -r sample env _ _
 do
   # find sample in kmtricks.fof and extract id
   grep $sample $sourcedir/kmtricks.fof | while IFS=" : " read -r sample_new file
@@ -116,6 +116,6 @@ done
 
 sinks=$decom_in/sinks.txt
 
-rm -r ./decOM_output
+[ -d decOM_output ] && rm -r ./decOM_output
 
 decOM-MST -p_sources $sourcedir -m $decom_in/map.csv -p_sinks $sinks -p_keys $decom_in -mem 200GB -t 1 -o ./decOM_output

@@ -107,10 +107,10 @@ do
   samtools index -c ${sample}.bam
   # Export unmapped reads as a fastq file
   samtools view -Sb -f 4 -@ 10 ${sample}.bam > ${sample}_unmapped.bam
-  bedtools bamtofastq -i ${sample}_unmapped.bam -fq ${sample}_unmapped.fastq
+  samtools fastq ${sample}_unmapped.bam > ${sample}_unmapped.fastq
   # Do the same for mapped reads
   samtools view -Sb -F 4 -@ 10 ${sample}.bam > ${sample}_mapped.bam
-  bedtools bamtofastq -i ${sample}_mapped.bam -fq ${sample}_mapped.fastq
+  samtools fastq ${sample}_mapped.bam > ${sample}_mapped.fastq
   # Compressed output
   pigz -p $n_proc ${sample}_unmapped.fastq
   pigz -p $n_proc ${sample}_mapped.fastq

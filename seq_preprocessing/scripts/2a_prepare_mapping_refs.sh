@@ -52,7 +52,6 @@ fi
 sample_list=${indir}/file_list.csv # The file list determining the samples to be processed
 
 ## Load modules and activate environment
-module load bioinfo-tools bwa
 conda activate oral_mb_evol
 
 ## Print some info
@@ -107,11 +106,10 @@ do
     fi
   # For all true samples, the mapping will be done against a concatenated reference of the host and the human genome
   else
-    # Find the reference genome using the host_genome_per_species.csv file
-    refgen=$(grep $species ${outdir}/host_genome_per_species.csv | awk -F "," '{print $3}' )
     # Find the alternate species being used if there was not ref genome for this species
     alt_species=$( awk -F "," -v species=$species '$1 == species {print $2}' ${outdir}/host_genome_per_species.csv )
-    
+    # Find the reference genome using the host_genome_per_species.csv file
+    refgen=$(grep ${alt_species}_genome ${outdir}/host_genome_per_species.csv | awk -F "," '{print $3}' )
     # Print a warning if the reference genome was not found in the file
     if [[ -z $refgen ]]
     then
@@ -133,11 +131,11 @@ do
   then
     echo "Indexing ${full_ref}"
     # Calculate batch size - we can scale it according to the available memory, the default being 10^6
-    batch_size=$( echo "(10^6) * 200 * ${SLURM_NTASKS}" | bc )
+    batch_size=$( echo "(10^6) * 200 * ${n_proc}" | bc )
     # Decompress reference to index, then recompress
-    pigz -d -p ${SLURM_NTASKS} $full_ref
+    pigz -d -p ${n_proc} $full_ref
     bwa index -b $batch_size -a bwtsw ${full_ref%.gz}
-    pigz -p ${SLURM_NTASKS} ${full_ref%.gz}
+    pigz -p ${n_proc} ${full_ref%.gz}
   fi
   
   # Print out a file with the full reference per input file
