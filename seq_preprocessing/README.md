@@ -5,11 +5,11 @@ graph TB;
     A-->C[scripts];
 ```
 
-**Scripts: **
+**Scripts:**
 
 ```mermaid
 graph TB;
-    A[0_trimming or download from ENA]-->B[1_merging.sh]
+    A[0_trimming or download]-->B[1_merging.sh]
     B-->C[2b_mapping.sh];
     D[0_download_ncbi_genomes.sh]-->E[2a_prepare_mapping_refs.sh];
     E-->C;
