@@ -3,8 +3,8 @@ Log Loss,learner,dataset
 0.479165623928275,classif.featureless,train
 0.407013478917353,classif.kknn,test
 0.316386618020472,classif.kknn,train
-0.450315873654579,classif.nnet,test
-0.385052790064413,classif.nnet,train
+0.451604431997139,classif.nnet,test
+0.38583324448494,classif.nnet,train
 0.4268223287187,classif.ranger,test
 0.30287241615148,classif.ranger,train
 0.545045466717715,classif.rpart,test

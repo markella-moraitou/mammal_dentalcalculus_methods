@@ -1,7 +1,7 @@
 nr,learner_id,regr.mae
 1,regr.featureless,5.15470556165434
-2,regr.kknn,4.30827761852778
+2,regr.kknn,4.30869320271334
 3,regr.lm,4.70751040948073
-4,regr.nnet,4.57095718563417
-5,regr.randomForest,4.35303655198251
+4,regr.nnet,4.58533100625146
+5,regr.randomForest,4.34824919015698
 6,regr.ranger,4.3451534860886
