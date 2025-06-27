@@ -8,11 +8,9 @@
 
 #### LOAD PACKAGES ####
 #remotes::install_github("mlr-org/mlr3extralearners@*release")
-#remotes::install_url('https://github.com/catboost/catboost/releases/download/v1.2.5/catboost-R-windows-x86_64-1.2.5.tgz', INSTALL_opts = c("--no-multiarch", "--no-test-load"))
 library(tidyr)
 library(dplyr)
 library(renv)
-library(here)
 library(ggplot2)
 library(mlr3)
 library(mlr3tuning)
@@ -21,7 +19,6 @@ library(mlr3learners)
 library(mlr3extralearners)
 library(mlr3viz)
 library(mlr3tuningspaces)
-library(catboost)
 library(patchwork)
 library(paradox)
 library(stringr)
@@ -29,9 +26,6 @@ library(pdp)
 library(rlist)
 
 #### VARIABLES AND WORKING DIRECTORY ####
-# Make sure working directory is correctly set
-wd <- here()
-setwd(wd)
 
 # Directory paths
 indir <- normalizePath(file.path("..","output", "LM"))
@@ -179,20 +173,10 @@ best_params = list()
 
 #### Featureless and lm ####
 lrn_featureless = lrn("regr.featureless")
+saveRDS(lrn_featureless, file = file.path(outdir, "regr.lrn_featureless.RDS"))
+
 lrn_lm = lrn("regr.lm")
-
-#### Tune catboost ####
-#lrn_catboost = lrn("regr.catboost",
-#                   iterations = to_tune(100,500),
-#                   learning_rate = to_tune(0.01, 0.3),
-#                   depth = to_tune(4, 10),
-#                   l2_leaf_reg = to_tune(1, 10),
-#                   bagging_temperature = to_tune(0, 1),
-#                   #subsample = to_tune(0.5, 1),
-#                   random_strength = to_tune(0, 1)
-#                   )
-
-#lrn_catboost$param_set$values <- tune_and_save(lrn_catboost, "regr.catboost", task_train)
+saveRDS(lrn_lm, file = file.path(outdir, "regr.lrn_lm.RDS"))
 
 #### Tune kknn ####
 lrn_kknn = lrn("regr.kknn",
@@ -202,6 +186,8 @@ lrn_kknn = lrn("regr.kknn",
 
 lrn_kknn$param_set$values <- tune_and_save(lrn_kknn, "regr.kknn", task_train)
 
+saveRDS(lrn_kknn, file = file.path(outdir, "regr.lrn_kknn.RDS"))
+
 #### Tune nnet ####
 lrn_nnet = lrn("regr.nnet",
                size = to_tune(1, 20),
@@ -209,6 +195,8 @@ lrn_nnet = lrn("regr.nnet",
                maxit = to_tune(100, 1000))
 
 lrn_nnet$param_set$values <- tune_and_save(lrn_nnet, "regr.nnet", task_train)
+
+saveRDS(lrn_nnet, file = file.path(outdir, "regr.lrn_nnet.RDS"))
 
 #### Tune randomForest ####
 lrn_randomForest = lrn("regr.randomForest", 
@@ -220,6 +208,8 @@ lrn_randomForest = lrn("regr.randomForest",
                        )
 
 lrn_randomForest$param_set$values <- tune_and_save(lrn_randomForest, "regr.randomForest", task_train)
+
+saveRDS(lrn_randomForest, file = file.path(outdir, "regr.lrn_randomForest.RDS"))
 
 #### Tune ranger ####
 lrn_ranger = lrn("regr.ranger", 
@@ -233,6 +223,8 @@ lrn_ranger = lrn("regr.ranger",
 
 # Tune on training dataset
 lrn_ranger$param_set$values <- tune_and_save(lrn_ranger, "regr.ranger", task_train)
+
+saveRDS(lrn_ranger, file = file.path(outdir, "regr.lrn_ranger.RDS"))
 
 #### Benchmark ####
 rcv = rsmp("repeated_cv", repeats = 10, folds = 10)
@@ -289,13 +281,6 @@ p <- ggplot(aes(y = !!sym(measure$label), x = dataset, fill = learner), data = e
   scale_fill_viridis_d() + theme(legend.position = "none") 
 
 ggsave(p, filename  =  file.path(outdir, "model_evaluation_regr.png"), width  =  13, height = 8)
-
-## Save all learners
-for (l in learners) {
-  name = paste0("regr.", l, ".RDS")
-  obj = get(l)
-  saveRDS(object = obj, file = file.path(outdir, name))
-}
 
 #### Extract best model ####
 final_regr <- lrn_ranger
@@ -371,17 +356,7 @@ measure = msr("classif.logloss")
 #### Featureless ####
 lrn_featureless = lrn("classif.featureless", predict_type = "prob")
 
-#### Tune catboost ####
-#lrn_catboost = lrn("classif.catboost", predict_type = "prob",
-#                   iterations = to_tune(100,500),
-#                   learning_rate = to_tune(0.01, 0.3),
-#                   depth = to_tune(4, 10),
-#                   l2_leaf_reg = to_tune(1, 10),
-#                   bagging_temperature = to_tune(0, 1),
-#                   #subsample = to_tune(0.5, 1),
-#                   random_strength = to_tune(0, 1))
-
-#lrn_catboost$param_set$values <- tune_and_save(lrn_catboost, "classif.catboost", task_train)
+saveRDS(lrn_featureless, file = file.path(outdir, "classif.lrn_featureless.RDS"))
 
 #### Tune kknn ####
 lrn_kknn = lrn("classif.kknn", predict_type = "prob",
@@ -391,6 +366,8 @@ lrn_kknn = lrn("classif.kknn", predict_type = "prob",
 
 lrn_kknn$param_set$values <- tune_and_save(lrn_kknn, "classif.kknn", task_train)
 
+saveRDS(lrn_kknn, file = file.path(outdir, "classif.lrn_kknn.RDS"))
+
 #### Tune nnet ####
 lrn_nnet = lrn("classif.nnet", predict_type = "prob",
                size = to_tune(1, 20),
@@ -398,6 +375,8 @@ lrn_nnet = lrn("classif.nnet", predict_type = "prob",
                maxit = to_tune(100, 1000))
 
 lrn_nnet$param_set$values <- tune_and_save(lrn_nnet, "classif.nnet", task_train)
+
+saveRDS(lrn_nnet, file = file.path(outdir, "classif.lrn_nnet.RDS"))
 
 #### Tune randomForest ####
 #lrn_randomForest = lrn("classif.randomForest", predict_type = "prob", 
@@ -409,6 +388,8 @@ lrn_nnet$param_set$values <- tune_and_save(lrn_nnet, "classif.nnet", task_train)
 #                       )
 
 #lrn_randomForest$param_set$values <- tune_and_save(lrn_randomForest, "classif.randomForest", task_train)
+
+#saveRDS(lrn_randomForest, file = file.path(outdir, "classif.lrn_randomForest.RDS"))
 
 #### Tune ranger ####
 lrn_ranger = lrn("classif.ranger", predict_type = "prob", 
@@ -423,6 +404,8 @@ lrn_ranger = lrn("classif.ranger", predict_type = "prob",
 # Tune on training dataset
 lrn_ranger$param_set$values <- tune_and_save(lrn_ranger, "classif.ranger", task_train)
 
+saveRDS(lrn_ranger, file = file.path(outdir, "classif.lrn_ranger.RDS"))
+
 #### Tune rpart ####
 lrn_rpart = lrn("classif.rpart", predict_type = "prob",
                 cp = to_tune(0.001, 0.1),  # Complexity parameter
@@ -431,6 +414,8 @@ lrn_rpart = lrn("classif.rpart", predict_type = "prob",
 )
 
 lrn_rpart$param_set$values <- tune_and_save(lrn_rpart, "classif.rpart", task_train)
+
+saveRDS(lrn_rpart, file = file.path(outdir, "classif.lrn_rpart.RDS"))
 
 #### Benchmark ####
 rcv = rsmp("repeated_cv", repeats = 10, folds = 10)
@@ -496,14 +481,6 @@ p <- ggplot(aes(y = !!sym(measure$label), x = dataset, fill = learner), data = e
   scale_fill_viridis_d() + theme(legend.position = "none") 
 
 ggsave(p, filename  =  file.path(outdir, "model_evaluation_classif.png"), width  =  13, height = 8)
-
-## Save all learners
-
-for (l in learners) {
-  name = paste0("classif.", l, ".RDS")
-  obj = get(l)
-  saveRDS(object = obj, file = file.path(outdir, name))
-}
 
 #### Extract best model ####
 final_learner <- lrn_ranger

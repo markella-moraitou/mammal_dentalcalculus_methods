@@ -9,16 +9,12 @@
 #### LOAD PACKAGES ####
 library(dplyr)
 library(tidyr)
-library(here)
 library(ggplot2)
 library(ggpubr)
 library(stringr)
 library(scales)
 
 #### VARIABLES AND WORKING DIRECTORY ####
-# Make sure working directory is correctly set
-wd <- here()
-setwd(wd)
 
 # Directory paths
 indir <- normalizePath(file.path("..","input"))
@@ -59,7 +55,8 @@ pool_info <- data.frame(name=c("Pool A", "Pool B", "Pool C", "Pool D"),
 # Do samples differ in the number of number of reads they generate?
 #indexing_final_vol_ul = 20
 
-seq_data <- filt_dat %>% filter(!is.na(raw_count) & raw_count!=0) %>%
+seq_data <- filt_dat %>%
+  filter(!is.na(submitted_count) & submitted_count!=0) %>%
   select(-c(Collection.notes, Country, Region, Locality, Sampling.comments, Appearance)) %>%
   mutate(failed_indexing = (ind_output_copies < 10^9)) %>%
   # Add info about pool volume and seq output
@@ -72,7 +69,7 @@ seq_data <- filt_dat %>% filter(!is.na(raw_count) & raw_count!=0) %>%
   # Calculate the expected number of reads
   mutate(expected_reads=pool_read_depth*pool_percentage) %>%
   # Calculate number of unique reads
-  mutate(unique_count = raw_count * perc_unique/100)
+  mutate(unique_count = submitted_count * perc_unique/100)
 
 ## Is there a correlation between the percentage of unique reads and the amount of input DNA?
 # Percentage of unique reads is also affected by sequencing depth,
@@ -80,18 +77,18 @@ seq_data <- filt_dat %>% filter(!is.na(raw_count) & raw_count!=0) %>%
 
 binned_seq_data <- seq_data %>%
   # Remove outliers
-  filter(raw_count < 2e+07 & raw_count > 1e+06) %>%
-  mutate(quartile = ntile(raw_count, 4)) %>%
+  filter(submitted_count < 2e+07 & submitted_count > 1e+06) %>%
+  mutate(quartile = ntile(submitted_count, 4)) %>%
   group_by(quartile) %>%
   mutate(label = paste0(
     "Quartile ", quartile, "\n(", 
-    format(min(raw_count), big.mark = ",", scientific = FALSE), " - ", 
-    format(max(raw_count), big.mark = ",", scientific = FALSE), 
+    format(min(submitted_count), big.mark = ",", scientific = FALSE), " - ", 
+    format(max(submitted_count), big.mark = ",", scientific = FALSE), 
     ")"
   ))
 
 input_vs_unique <-
-  ggplot(data = binned_seq_data, aes(x = DNA_input_ug, y = perc_unique, colour = raw_count)) +
+  ggplot(data = binned_seq_data, aes(x = DNA_input_ug, y = perc_unique, colour = submitted_count)) +
   geom_point(size = 3, alpha = 0.7) +
   scale_x_continuous(trans = "log10", name = "DNA input (μg)")  +
   scale_color_viridis_c(trans = "log10", breaks = c(2e+6, 4e+6, 8e+6, 16e+6), name = "Total sequencing reads",
@@ -111,7 +108,7 @@ ggsave(input_vs_unique, file = file.path(outdir, "input_vs_unique.png"),
        width = 12, height = 8)
 
 input_vs_unique_bin <-
-  ggplot(data = binned_seq_data, aes(x = DNA_input_ug, y = perc_unique, colour = raw_count)) +
+  ggplot(data = binned_seq_data, aes(x = DNA_input_ug, y = perc_unique, colour = submitted_count)) +
   geom_point(size = 3, alpha = 0.7) +
   facet_grid(rows = vars(label)) +
   scale_x_continuous(trans = "log10", name = "DNA input (μg)") +
@@ -134,48 +131,6 @@ ggsave(input_vs_unique_bin, file = file.path(outdir, "input_vs_unique_binned.png
 binned_seq_data %>% ungroup %>% mutate(high_DNA = (DNA_input_ug > 0.01),
                            complex_library = (perc_unique > 90)) %>%
   dplyr::select(high_DNA, complex_library) %>% table()
-
-## Is there a correlation between the number of species discovered, the amount of input DNA and the total sequencing reads?
-species_discovery <-
-  ggplot(data = binned_seq_data, aes(x = DNA_input_ug, y = species_raw, colour = raw_count)) +
-  geom_point(size = 3, alpha = 0.7) +
-  scale_x_continuous(trans = "log10", name = "DNA input (μg)") +
-  scale_color_viridis_c(trans = "log10", breaks = c(2e+6, 4e+6, 8e+6, 16e+6), name = "Total sequencing reads",
-                        guide = guide_colourbar(position = "top",
-                                                theme = theme(
-                                                  legend.key.width  = unit(20, "lines"),
-                                                  legend.key.height = unit(1, "lines"),
-                                                  legend.text = element_text(angle = 90)
-                                                ))) +
-  ylab("Number of species identified") +
-  theme(panel.border = element_rect(color = "black", fill = NA, size = 1))
-
-species_discovery
-
-ggsave(species_discovery, file = file.path(outdir, "species_discovery.png"),
-       width = 12, height = 8)
-
-species_discovery_bin <-
-  ggplot(data = binned_seq_data, aes(x = DNA_input_ug, y = species_raw, colour = raw_count)) +
-  geom_point(size = 3, alpha = 0.7) +
-  facet_grid(rows = vars(label)) +
-  scale_x_continuous(trans = "log10", name = "DNA input (μg)") +
-  scale_color_viridis_c(trans = "log10", breaks = c(2e+6, 4e+6, 8e+6, 16e+6), name = "Total sequencing reads",
-                        guide = guide_colourbar(position = "top",
-                                                theme = theme(
-                                                  legend.key.width  = unit(20, "lines"),
-                                                  legend.key.height = unit(1, "lines"),
-                                                  legend.text = element_text(angle = 90)
-                                                ))) +
-  ylab("Number of species identified") +
-  theme(panel.border = element_rect(color = "black", fill = NA, size = 1))
-
-species_discovery_bin
-
-ggsave(species_discovery_bin, file = file.path(outdir, "species_discovery_binned.png"),
-       width = 12, height = 16)
-
-# Save tables as CSVs
 
 # Save table
 write.csv(seq_data, file = file.path(outdir, "seq_data.csv"), quote = FALSE, row.names = FALSE)

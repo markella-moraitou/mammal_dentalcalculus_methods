@@ -9,13 +9,13 @@
 #### LOAD PACKAGES ####
 library(dplyr)
 library(tidyr)
-library(here)
 library(stringr)
 library(ggplot2)
 library(ggnewscale)
 library(vegan)
 library(lme4)
 library(lmerTest)
+library(rstatix)
 library(car)
 library(blmeco)
 library(FDB1)
@@ -97,7 +97,7 @@ data <- as_tibble(data) %>%
   # Get collection year as numeric (so we can test for the effect of sample age)
   mutate(Year_most_recent = case_when(is.na(as.numeric(Year)) ~ as.numeric(str_remove_all(Year, "<|\\?| \\(received\\)|[0-9][0-9][0-9][0-9]-")), TRUE ~ as.numeric(Year))) %>%
   mutate(Age_approximated = (Year != Year_most_recent)) %>%
-  mutate(Age = 2023-Year_most_recent,
+  mutate(Age = (2023-Year_most_recent)/100,
         Year_most_recent = NULL)
 
 diet <- diet %>%
@@ -170,7 +170,6 @@ flowchart <-
   labs(title = "DNA extraction and library preparation flowchart",
        subtitle = "indicating measurement steps and variables used within models")
 
-flowchart
 
 #Can't get arrows to work -- will add them later
 ggsave(filename  =  file.path(outdir, "flowchart.png"), flowchart, width  =  10, height = 8)
@@ -195,10 +194,18 @@ var_explained <- round(ord$sdev^2 * 100 / sum(ord$sdev^2), 1) # Variance explain
 loadings_matrix <- data.frame(Variables = rownames(ord$rotation[,c(1,2)]), ord$rotation[,c("PC1", "PC2")])
 colnames(loadings_matrix)[2:3] <- c("PC1_scaled", "PC2_scaled")
 
-labels <- ord$x %>% as.data.frame %>% mutate(label = case_when(PC1 > 10 ~ rownames(.),
+loadings_matrix <- loadings_matrix %>%
+        mutate(x = case_when(PC1_scaled > 0 ~ PC1_scaled + 0.2, TRUE ~ PC1_scaled - 0.2), # Scale the arrows
+               y = case_when(PC2_scaled > 0 ~ PC2_scaled + 0.1, TRUE ~ PC2_scaled - 0.1)) %>%
+               filter(Variables != "ash") # Remove ash as it is not relevant for the PCA
+
+labels <- ord_df %>% as.data.frame %>% mutate(label = case_when(PC1 > 10 ~ rownames(.),
                                                                PC2 == max(PC2) | PC2 == min(PC2) ~ rownames(.),
                                                                rownames(.) == "Olive baboon" ~ rownames(.))) %>%
-  pull(label)
+          mutate(y = case_when(is.na(label) ~ NA,
+                              label %in% c("Olive baboon", "South American fur seal", "Orca", "Bornean orangutan") ~ PC2_scaled - 0.1,
+                              label %in% c("South American sea lion", "African elephant", "European badger") ~ PC2_scaled + 0.1)) %>%
+  dplyr::select(label, y)
 
 # Plot
 pca <- ggplot(aes(x = PC1_scaled, y = PC2_scaled, colour=diet$calculated_species_main_diet), data = ord_df) +
@@ -210,12 +217,9 @@ pca <- ggplot(aes(x = PC1_scaled, y = PC2_scaled, colour=diet$calculated_species
                                        yend = PC2_scaled), arrow = arrow(length = unit(0.5, "picas")),
                color = "black") +
   theme_bw_alt + theme(legend.position = "bottom") +
-  annotate("text", x = loadings_matrix$PC1_scaled + ifelse(loadings_matrix$Variables=="cf", -0.2, 0),
-           y = loadings_matrix$PC2_scaled + ifelse(loadings_matrix$Variables=="ee", 0.1, 0),
+  annotate("text", x = loadings_matrix$x, y = loadings_matrix$y,
            label = loadings_matrix$Variables, size = 8, alpha = 0.8) +
   labs(tag = "A.")
-
-pca
 
 ## Add principal components to data
 filt_dat$PC1 <- ord_df[match(filt_dat$Common.name, rownames(ord_df)), "PC1"]
@@ -235,17 +239,12 @@ filt_dat <- filt_dat %>% left_join(diet)
 write.table(filt_dat, file = file.path(outdir, "filtered_data.tsv"), sep = "\t", quote = FALSE, row.names = FALSE)
 
 # Fix PCA
-set.seed(60)
 pca <- 
   pca + geom_point(size=3, aes(colour = diet$diet_category)) +
   scale_colour_manual(values = diet2_palette[unique(as.character(diet$diet_category))], name = "Dietary category") +
-  geom_text(label = labels, size = 6, hjust = 0.5, position = position_jitter(height = 0.1, width = 0),
-            aes(x = PC1_scaled, colour = diet$diet_category)) +
+  geom_text(label = labels$label, size = 6, hjust = 0.5, aes(x = PC1_scaled, y = labels$y, colour = diet$diet_category)) +
     xlim(-1, 4)
 
-pca
-
-set.seed(60)
 ggsave(filename  =  file.path(outdir, "dietary_PCA.png"), pca, width  =  8, height = 8)
 
 # Save just dietary data
@@ -316,7 +315,7 @@ summ_dat <- summ_dat %>% mutate(lab_col = case_when(n_samples < 25 ~ "black", TR
 p_summary <-
   ggplot(aes(x = diet_category, y = order, size = n_species, fill = n_samples), data = summ_dat) +
   geom_point(shape = 21, colour = "black") +
-  theme_void_alt + theme(legend.title.position = "top") +
+  theme_void_alt + theme(legend.title.position = "top", axis.text.y = element_text(hjust = 0)) +
   xlab("Dietary category") + ylab("Taxonomic order") +
   labs(tag = "B.") +
   scale_fill_continuous(low = "lightblue", high = "darkblue", name = "Sample number", trans = "log", breaks = c(5, 25, 125), 
@@ -327,8 +326,6 @@ p_summary <-
   geom_text(aes(label = paste0(n_species, " (", n_samples, ")"), x = diet_category, y = order, colour = lab_col, size = n_species), fontface = "bold") +
   scale_colour_manual(values = summ_dat$lab_col, guide = "none") +
   scale_size_continuous(range = c(4, 8), guide = "none")
-
-p_summary
 
 ggsave(filename  =  file.path(outdir, "summary_plot.png"), p_summary, width  =  9, height = 8)
 
@@ -480,19 +477,17 @@ p_m1 <-
   theme_bw_alt +
   labs(tag = "A.")
 
-p_m1
-
 # Simple linear model
 lm1 = lm(DNA_output_ug ~
-             Sample.weight.mg + Sample.weight.mg:PC1_scaled + Sample.weight.mg:PC2_scaled + Sample.weight.mg:Pigmented_extract,
+             Sample.weight.g. + Sample.weight.g.:PC1_scaled + Sample.weight.g.:PC2_scaled + Sample.weight.g.:Pigmented_extract,
            data = filt_dat1)
 
 # Extract weights
 weights <- 1 / lm(abs(lm1$residuals) ~ lm1$fitted.values)$fitted.values^2
 
 mm1 = lmer(DNA_output_ug ~
-             Sample.weight.mg + Sample.weight.mg:PC1_scaled + Sample.weight.mg:PC2_scaled + Sample.weight.mg:Pigmented_extract +
-              (0 + Sample.weight.mg | Species) + (0 + Sample.weight.mg| Ext.Date),
+             Sample.weight.g. + Sample.weight.g.:PC1_scaled + Sample.weight.g.:PC2_scaled + Sample.weight.g.:Pigmented_extract +
+              (0 + Sample.weight.g. | Species) + (0 + Sample.weight.g.| Ext.Date),
             data = filt_dat1, weights = weights)
 
 # Plot diagnostics
@@ -507,9 +502,10 @@ hist(residuals(mm1))
 s1 <- summary(mm1)
 s1
 
+# I will rescale this for ug of Sample instead of g of sample for plotting
 # Output
-weight_1 <- s1$coefficients["Sample.weight.mg", "Estimate"] # Qubit increases so much for every 1ng of sample added
-pc1_1 <- s1$coefficients["Sample.weight.mg:PC1_scaled", "Estimate"] # Reflects the interaction between PC1 and sample weight
+weight_1 <- s1$coefficients["Sample.weight.g.", "Estimate"]/1000 # Qubit increases so much for every 1ng of sample added
+pc1_1 <- s1$coefficients["Sample.weight.g.:PC1_scaled", "Estimate"]/1000 # Reflects the interaction between PC1 and sample weight
 
 # Get PC1 values for plotting 
 pc1_val <- data.frame(value=c(-0.5, 2.5)) #PC1 values to plot
@@ -529,8 +525,6 @@ p_m1 <-
   geom_function(fun = fun1_2, size = 1, colour = diet2_palette["Animalivore"]) +
   geom_label(aes(x = 30, y = 1.5, label = paste(pc1_val$lab[2],"\n(Animalivorous)")), colour = "black", size=5, alpha=0.5) +
   geom_label(aes(x = 30, y = 0.5, label = paste(pc1_val$lab[1],"\n(Herbi-/Frugivorous)")), colour = "black", size=5, alpha=0.5) 
-  
-p_m1
 
 ggsave(filename  =  file.path(outdir, "plot_mmodel1.png"), p_m1, width  =  15, height = 10)
 
@@ -538,18 +532,23 @@ ggsave(filename  =  file.path(outdir, "plot_mmodel1.png"), p_m1, width  =  15, h
 
 filt_dat1 <- filt_dat1 %>% mutate(DNA_yield = DNA_output_ug / Sample.weight.mg)
 
+# Get statistical tests (overall and pairwise)
+
+# Run kruskal wallis test
+pval <- kruskal_test(DNA_yield ~ diet_category, data = filt_dat1)$p
+effsize <- kruskal_effsize(DNA_yield ~ diet_category, data = filt_dat1)$effsize
+annot <- paste0("Kruskal-Wallis:\neffect size = ", round(effsize, 2), ",\np-value = ", pval)
+
 model1_box <-
   ggviolin(data = filt_dat1, x = "diet_category", y = "DNA_yield", fill = "diet_category",
            add = "mean_se") +
   scale_fill_manual(values = diet2_palette, name = "") +
   stat_compare_means(comparisons = list(c("Herbivore", "Frugivore"), c("Frugivore", "Animalivore"), c("Herbivore", "Animalivore")),
                      label = "p.signif", method = "wilcox", size = 8) +
-  stat_compare_means(label.y = 0.15, label.x = 1.3, size = 8, method = "kruskal.test") +
+  annotate("text", label = annot, y = 0.1, x = 1.2, size = 6, hjust = 0) +
   ylab("DNA yield (μg per mg of dental calculus)") + xlab("Dietary category") +
   theme_bw_alt + theme(legend.position = "none") +
   labs(tag = "B.")
-
-model1_box
 
 ggsave(filename  =  file.path(outdir, "model1_boxplot.png"), model1_box, width  =  15, height = 8)
 
@@ -587,15 +586,15 @@ ggsave(filename  =  file.path(outdir, "diet_to_DNA_yield.png"), diet_to_conc, wi
 filt_dat1_age <- filt_dat1 %>% filter(!is.na(Age))
 
 lm1_age = lm(DNA_output_ug ~
-             Sample.weight.mg + Sample.weight.mg:PC1_scaled + Sample.weight.mg:PC2_scaled + Sample.weight.mg:Pigmented_extract + Age,
+             Sample.weight.g. + Sample.weight.g.:PC1_scaled + Sample.weight.g.:PC2_scaled + Sample.weight.g.:Pigmented_extract + Sample.weight.g.:Age,
            data = filt_dat1_age)
 
 # Extract weights
 weights <- 1 / lm(abs(lm1_age$residuals) ~ lm1_age$fitted.values)$fitted.values^2
 
 mm1_age = lmer(DNA_output_ug ~
-             Sample.weight.mg + Sample.weight.mg:PC1_scaled + Sample.weight.mg:PC2_scaled + Sample.weight.mg:Pigmented_extract + Age +
-              (0 + Sample.weight.mg | Species) + (0 + Sample.weight.mg| Ext.Date),
+             Sample.weight.g. + Sample.weight.g.:PC1_scaled + Sample.weight.g.:PC2_scaled + Sample.weight.g.:Pigmented_extract + Sample.weight.g.:Age +
+              (0 + Sample.weight.g. | Species) + (0 + Sample.weight.g. | Ext.Date),
             data = filt_dat1_age, weights = weights)
 
 # Plot diagnostics
@@ -607,6 +606,8 @@ ggsave(filename  =  file.path(outdir, "diagnostics_mmodel1_age.png"), plot_grid(
 vif(mm1_age)
 shapiro.test(residuals(mm1_age))
 hist(residuals(mm1_age))
+
+summary(mm1_age)
 
 #### 2. Concentration - LP copy numbers ####
 
@@ -628,8 +629,6 @@ p_m2 <-
   scale_x_continuous(name = "DNA input amount (μg)") + 
   scale_y_continuous(name = expression(paste("Barcoded library molecules (10"^10, ")"))) +
   theme_bw_alt
-
-p_m2
 
 # Simple linear model
 lm2 = lm(bc_output_e10 ~
@@ -684,6 +683,24 @@ filt_dat2 <- filt_dat2 %>% mutate(Library_yield = bc_output_e10 / DNA_input_ug) 
   # For labelling
   mutate(Extract = case_when(Pigmented_extract == TRUE ~ "Pigmented",
                              TRUE ~ "Clear"))
+
+# Run kruskal wallis test
+# For clear extracts
+pval_c <- kruskal_test(Library_yield ~ diet_category, data = filter(filt_dat2, Extract == "Clear"))$p
+effsize_c <- kruskal_effsize(Library_yield ~ diet_category, data = filter(filt_dat2, Extract == "Clear"))$effsize
+annot_c <- paste0("Kruskal-Wallis:\neffect size = ", round(effsize_c, 2), ",\np-value = ", pval_c)
+
+# For pigmented extracts
+pval_p <- kruskal_test(Library_yield ~ diet_category, data = filter(filt_dat2, Extract == "Pigmented" & diet_category != "Animalivore"))$p
+effsize_p <- kruskal_effsize(Library_yield ~ diet_category, data = filter(filt_dat2, Extract == "Pigmented" & diet_category != "Animalivore"))$effsize
+annot_p <- paste0("Kruskal-Wallis:\neffect size = ", round(effsize_p, 2), ",\np-value = ", round(pval_p, 3))
+
+ann_text <- data.frame(lab = c(annot_p, annot_c),
+                       diet_category = c(0.2, 0.2),
+                       Library_yield = c(10^(-4), 10^(-4)),
+                       Extract = c("Pigmented", "Clear"))
+
+# Plot
 model2_box <-
   ggviolin(data = filter(filt_dat2, Extract != "Pigmented" | diet_category != "Animalivore"),
            x = "diet_category", y = "Library_yield", fill = "diet_category",
@@ -693,35 +710,36 @@ model2_box <-
                                         c("Animalivore", "Herbivore"),
                                         c("Frugivore", "Herbivore")),
                      label = "p.signif", size = 8) +
-  stat_compare_means(label.y = -5, label.x = 1, size = 8, method = "kruskal.test") +
+  geom_text(data = ann_text, aes(label = lab), size = 6, hjust = 0) +
   facet_grid(cols = vars(Extract)) +
   scale_y_continuous(trans = "log10") +
   ylab(expression(paste("Barcoding yield (", 10^10, "molecules per μg of DNA)"))) + xlab("") +
   theme_bw_alt + theme(legend.position = "none") +
   labs(tag = "A.")
 
-model2_box
-
 ggsave(filename  =  file.path(outdir, "model2_boxplot.png"), model2_box, width  =  10, height = 10)
 
 # Kruskal-Wallis tests
 
 kruskal.test(data = filt_dat2, Library_yield ~ Pigmented_extract)
+kruskal_effsize(data = filt_dat2, Library_yield ~ Pigmented_extract)
+
 kruskal.test(data = filt_dat2, Library_yield ~ diet_category)
+kruskal_effsize(data = filt_dat2, Library_yield ~ diet_category)
 
 ## Consider effect of age (for subset of samples with collection year)
 filt_dat2_age <- filt_dat2 %>% filter(!is.na(Age))
 
 # Simple linear model
 lm2_age = lm(bc_output_e10 ~
-           DNA_input_ug + DNA_input_ug:PC1_scaled + DNA_input_ug:PC2_scaled + DNA_input_ug:Pigmented_extract + Age,
+           DNA_input_ug + DNA_input_ug:PC1_scaled + DNA_input_ug:PC2_scaled + DNA_input_ug:Pigmented_extract + DNA_input_ug:Age,
          data = filt_dat2_age)
 
 # Extract weights
 weights <- 1 / lm(abs(lm2_age$residuals) ~ lm2_age$fitted.values)$fitted.values^2
 
 mm2_age <-  lmer(bc_output_e10 ~
-               DNA_input_ug + DNA_input_ug:PC1_scaled + DNA_input_ug:PC2_scaled + DNA_input_ug:Pigmented_extract + Age +
+               DNA_input_ug + DNA_input_ug:PC1_scaled + DNA_input_ug:PC2_scaled + DNA_input_ug:Pigmented_extract + DNA_input_ug:Age +
                (0 + DNA_input_ug | Species) + (0 + DNA_input_ug | LP.date),
               data = filt_dat2_age, weights = weights)
 
@@ -734,6 +752,8 @@ ggsave(filename  =  file.path(outdir, "diagnostics_mmodel2_age.png"), plot_grid(
 vif(mm2_age)
 shapiro.test(residuals(mm2_age))
 hist(residuals(mm2_age))
+
+summary(mm2_age)
 
 #### 3. Theoretic - Real ind numbers ####
 
@@ -775,6 +795,7 @@ diagn_3 <- diagnose_lmm(mm3)
 ggsave(filename  =  file.path(outdir, "diagnostics_mmodel3.png"), plot_grid(plotlist = diagn_3),
        width  =  14, height = 14)
 
+vif(mm3)
 shapiro.test(residuals(mm3))
 hist(residuals(mm3))
 
@@ -807,6 +828,22 @@ ggsave(filename  =  file.path(outdir, "plot_mmodel3.png"), p_m3, width  =  15, h
 
 ## Box plot with PCR efficiency
 
+# Run kruskal wallis test
+# For clear extracts
+pval_c <- kruskal_test(efficiency ~ diet_category, data = filter(filt_dat3, Extract == "Clear"))$p
+effsize_c <- kruskal_effsize(efficiency ~ diet_category, data = filter(filt_dat3, Extract == "Clear"))$effsize
+annot_c <- paste0("Kruskal-Wallis:\neffect size = ", round(effsize_c, 2), ",\np-value = ", round(pval_c, 3))
+
+# For pigmented extracts
+pval_p <- kruskal_test(efficiency ~ diet_category, data = filter(filt_dat3, Extract == "Pigmented" & diet_category != "Animalivore"))$p
+effsize_p <- kruskal_effsize(efficiency ~ diet_category, data = filter(filt_dat3, Extract == "Pigmented" & diet_category != "Animalivore"))$effsize
+annot_p <- paste0("Kruskal-Wallis:\neffect size = ", round(effsize_p, 2), ",\np-value = ", round(pval_p, 2))
+
+ann_text <- data.frame(lab = c(annot_p, annot_c),
+                       diet_category = c(0.2, 0.2),
+                       efficiency = c(-0.5, -0.5),
+                       Extract = c("Pigmented", "Clear"))
+
 model3_box <-
   ggviolin(data = filter(filt_dat3, (Extract == "Clear" | diet_category != "Animalivore")),
            x = "diet_category", y = "efficiency", fill = "diet_category",
@@ -816,7 +853,7 @@ model3_box <-
                                         c("Animalivore", "Herbivore"),
                                         c("Frugivore", "Herbivore")),
                      label = "p.signif", size = 8) +
-  stat_compare_means(label.y = -1, label.x = 1.3, size = 8, method = "kruskal.test") +
+  geom_text(data = ann_text, aes(label = lab), size = 6, hjust = 0) +
   scale_y_continuous(labels = percent_format(accuracy = 1), breaks = c(-0.5, 0, 0.5, 1, 1.5, 2, eff)) +
   ylab("Indexing PCR efficiency") + xlab("") +
   facet_grid(cols = vars(Extract)) +
@@ -824,9 +861,7 @@ model3_box <-
   theme_bw_alt + theme(legend.position = "none") +
   labs(tag = "B.")
 
-model3_box
-
-ggsave(filename  =  file.path(outdir, "model3_boxplot.png"), model3_box, width  =  8, height = 8)
+ggsave(filename  =  file.path(outdir, "model3_boxplot.png"), model3_box, width  =  10, height = 10)
 
 ggsave(filename  =  file.path(outdir, "model2_3_boxplots.png"),
        plot_grid(model2_box, model3_box + xlab("Diet category"), nrow = 2, ncol = 1, align = "v", axis = "lr"),
@@ -835,21 +870,24 @@ ggsave(filename  =  file.path(outdir, "model2_3_boxplots.png"),
 # Kruskal-Wallis tests
 
 kruskal.test(data = filt_dat3, efficiency ~ Pigmented_extract)
+kruskal_effsize(data = filt_dat3, efficiency ~ Pigmented_extract)
+
 kruskal.test(data = filt_dat3, efficiency ~ diet_category)
+kruskal_effsize(data = filt_dat3, efficiency ~ diet_category)
 
 ## Consider effect of age (for subset of samples with collection year)
 filt_dat3_age <- filt_dat3 %>% filter(!is.na(Age))
 
 # Simple linear model
 lm3_age = lm(observed_e10 ~
-           expected_e10 + expected_e10:PC1_scaled + expected_e10:PC2_scaled + expected_e10:Pigmented_extract + Age,
+           expected_e10 + expected_e10:PC1_scaled + expected_e10:PC2_scaled + expected_e10:Pigmented_extract + expected_e10:Age,
          data = filt_dat3_age)
 
 # Extract weights
 weights <- 1 / lm(abs(lm3_age$residuals) ~ lm3_age$fitted.values)$fitted.values^2
 
 mm3_age <-  lmer(observed_e10 ~
-               expected_e10 + expected_e10:PC1_scaled + expected_e10:PC2_scaled + expected_e10:Pigmented_extract + Age +
+               expected_e10 + expected_e10:PC1_scaled + expected_e10:PC2_scaled + expected_e10:Pigmented_extract + expected_e10:Age +
                (0 + expected_e10 | Species) + (0 + expected_e10 | Ind.date),
              data = filt_dat3_age, weights = weights)
 
@@ -862,6 +900,8 @@ ggsave(filename  =  file.path(outdir, "diagnostics_mmodel3_age.png"), plot_grid(
 vif(mm3_age)
 shapiro.test(residuals(mm3_age))
 hist(residuals(mm3_age))
+
+summary(mm3_age)
 
 #### 4. Weight - Ind numbers (not sure abou this bit) ####
 
@@ -901,6 +941,7 @@ diagn_4 <- diagnose_lmm(mm4)
 ggsave(filename  =  file.path(outdir, "diagnostics_mmodel4.png"), plot_grid(plotlist = diagn_4),
        width  =  14, height = 14)
 
+vif(mm4)
 shapiro.test(residuals(mm4))
 hist(residuals(mm4))
 
@@ -926,10 +967,38 @@ model4_box <-
 
 model4_box
 
+## Consider effect of age (for subset of samples with collection year)
+filt_dat4_age <- filt_dat4 %>% filter(!is.na(Age))
+
+# Simple linear model
+lm4_age = lm(observed_e10 ~
+           Sample.weight.mg + Sample.weight.mg:PC1_scaled + Sample.weight.mg:PC2_scaled + Sample.weight.mg:Pigmented_extract + Sample.weight.mg:Age,
+         data = filt_dat4_age)
+
+# Extract weights
+weights <- 1 / lm(abs(lm4_age$residuals) ~ lm4_age$fitted.values)$fitted.values^2
+
+mm4_age <-  lmer(observed_e10 ~
+               Sample.weight.mg + Sample.weight.mg:PC1_scaled + Sample.weight.mg:PC2_scaled + Sample.weight.mg:Pigmented_extract + Sample.weight.mg:Age +
+               (0 + Sample.weight.mg | Species),
+             data = filt_dat4_age, weights = weights)
+
+# Plot diagnostics
+diagn_4_age <- diagnose_lmm(mm4_age)
+
+ggsave(filename  =  file.path(outdir, "diagnostics_mmodel4_age.png"), plot_grid(plotlist = diagn_1),
+       width  =  14, height = 14)
+
+vif(mm4_age)
+shapiro.test(residuals(mm4_age))
+hist(residuals(mm4_age))
+
+summary(mm4_age)
+
 #### Host vs Microbiome reads ####
 
 filt_dat_h <- filt_dat %>% filter(!is.na(host_count)) %>%
-  dplyr::select(Ext.ID, PC1, PC2, Pigmented_extract, Species, Common.name, order, diet_category, host_count, unmapped_count) %>%
+  dplyr::select(Ext.ID, PC1, PC2, Pigmented_extract, Age, Species, Common.name, order, diet_category, host_count, unmapped_count) %>%
   # Calculate host proportion ratio
   mutate(filtered_count = host_count + unmapped_count) %>% # This is the number of reads after preprecessing but before mapping
   mutate(host_perc = host_count / filtered_count) %>%
@@ -1016,23 +1085,35 @@ glht_tiles
 
 ggsave(filename  =  file.path(outdir, "tiles_host_vs_microbiome.png"), glht_tiles, width  =  9, height = 7)
 
+## Consider sample age
+
+## GLMM Model on order level
+gmm_h_age <- glm(cbind(host_count, filtered_count) ~ order + Age,
+              family = quasibinomial, data = filter(filt_dat_h, !is.na(Age)))
+
+summary(gmm_h_age)
+
+car::vif(gmm_h_age) # Check for collinearity
+
+# Analysis of deviance
+car::Anova(gmm_h_age, type = "II") # analysis of deviance
+
 #### Source composition ####
 
 ## Plot composition by sample
-source_palette <- list("p_aOral"="#E54457", "p_mOral"="#AB0A1D", "p_Sediment.Soil"="#B2AD0B", "p_Skin"="#FFCC73", "p_Unknown"="#AAAAAA")
 
-decom_comp <- filt_dat %>% dplyr::select(Ext.ID, Common.name, order, diet_category, starts_with("p_")) %>%
+decom_comp <- filt_dat %>% dplyr::select(Ext.ID, Common.name, order, diet_category, Age, starts_with("p_")) %>%
   # Keep only samples with decOM results
   filter(!is.na(p_Unknown)) %>%
   # Remove species with less than 5 samples
   group_by(Common.name) %>% filter(n_distinct(Ext.ID) >= 4) %>% 
   #Calculate sum of ancient and modern oral microbiome 
-  mutate(oral_prop = (p_aOral + p_mOral),
+  mutate(oral_prop = (p_OralH + p_OralTM + p_OralMM),
          contam_prop = (p_Skin + p_Sediment.Soil)) %>%
   ungroup() %>%
   # Group orders with small number of samples
   group_by(order) %>%
-  mutate(order_grouped=case_when(n_distinct(Ext.ID) < 20 ~ "Other",
+  mutate(order_grouped=case_when(n_distinct(Ext.ID) < 25 ~ "Other",
                                  TRUE ~ order)) %>% ungroup %>%
   # Pivot longer
   pivot_longer(starts_with("p_"), names_to = "Source", values_to = "Proportion") %>%
@@ -1058,16 +1139,18 @@ names(new_labels) <- id_levels$Ext.ID
 
 decom_comp <- 
   decom_comp %>% mutate(order_grouped = factor(order_grouped, levels = ord_levels),
-                        Source = factor(Source, levels = c("p_aOral", "p_mOral", "p_Sediment.Soil", "p_Skin", "p_Unknown")),
+                        Source = factor(Source, levels = c("p_OralH", "p_OralTM", "p_OralMM", "p_Rumen", "p_Sediment.Soil", "p_Skin", "p_Unknown")),
                         Ext.ID = factor(Ext.ID, level = id_levels$Ext.ID)) %>%
   arrange(order_grouped, Ext.ID, Source)
 
 # Plot stacked barplot
+source_palette <- list("p_OralH"="#EB3838", "p_OralTM"="#A20404", "p_OralMM"="#FF5F5F", "p_Rumen"="#C4D307", "p_Sediment.Soil"="#6E7C15", "p_Skin"="#FFCC73", "p_Unknown"="#AAAAAA")
+
 decom_bar <-
   ggplot(data = decom_comp, aes(y = Ext.ID, x = Proportion, fill = Source, group = Common.name)) +
   geom_bar(stat = "identity", colour = NA) +
   scale_fill_manual(values = source_palette, name = "",
-                    labels = c("ancient oral", "modern oral", "sediment/soil", "skin", "unknown")) +
+                    labels = c("oral (human)", "oral (terrestrial mammal)", "oral (marine mammal)", "rumen", "sediment/soil", "skin", "unknown")) +
   facet_grid(rows = vars(order_grouped), scales = "free", space = "free", switch = "y") +
   theme_bw_alt + theme(axis.ticks.y = element_blank(),
                        axis.text.y = element_blank(),
@@ -1078,8 +1161,6 @@ decom_bar <-
   ylab("") + xlab("") +
   # Replace y labels
   scale_y_discrete(labels = new_labels)
-
-decom_bar
 
 # Get diet metadata as a tile plot
 diet_meta_plot <-
@@ -1117,18 +1198,16 @@ decom_bar_s <-
   ggplot(data = decom_comp_s, aes(y = Common.name, x = Proportion, fill = Source, group = Common.name)) +
   geom_bar(stat = "identity", colour = NA) +
   scale_fill_manual(values = source_palette, name = "",
-                    labels = c("ancient oral", "modern oral", "sediment/soil", "skin", "unknown")) +
+                    labels = c("oral (human)", "oral (terrestrial mammal)", "oral (marine mammal)", "rumen", "sediment/soil", "skin", "unknown")) +
   facet_grid(rows = vars(order_grouped), scales = "free", space = "free", switch = "y") +
   theme_bw_alt + theme(axis.ticks.y = element_blank(),
                        axis.text.y = element_blank(),
                        panel.background = element_rect(fill = NA, colour = NA),
                        panel.border = element_rect(color = "black", fill = NA),
                        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-                       legend.position = "bottom", legend.direction = "horizontal",
+                       legend.position = "bottom", legend.direction = "vertical",
                        legend.location = "plot" ) +
   ylab("")
-
-decom_bar_s
 
 ## Plot oral to contaminant ratio
 oral_contam_ratio <- decom_comp %>%
@@ -1148,8 +1227,6 @@ ratio_box <-
   geom_vline(aes(xintercept = 1)) +
   xlab("oral-contaminant ratio") + ylab("")
 
-ratio_box
-
 ## Diet metadata
 # Get diet metadata as a tile plot
 diet_meta_plot <-
@@ -1161,7 +1238,7 @@ diet_meta_plot <-
                        panel.background = element_rect(fill = NA, colour = NA),
                        panel.border = element_rect(color = NA, fill = NA),
                        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-                       legend.position = "bottom", legend.direction = "horizontal",
+                       legend.position = "bottom", legend.direction = "vertical",
                        strip.background = element_blank(),
                        strip.text = element_blank()) +
   scale_y_discrete(position = "right") +
@@ -1182,7 +1259,7 @@ decom_perm <- decom_comp %>% filter(Source != "p_Unknown") %>%
   filter(!is.na(Proportion)) %>%
   pivot_wider(names_from = "Source", values_from = "Proportion") %>% ungroup %>%
   # Sum ancient and modern oral
-  mutate(p_Oral = p_mOral + p_aOral) %>% dplyr::select(-p_mOral, -p_aOral)
+  mutate(p_Oral = p_OralH + p_OralTM + p_OralMM) %>% dplyr::select(-p_OralH, -p_OralTM, -p_OralMM)
 
 # Get factor to be used in the test
 composition <- data.frame(dplyr::select(decom_perm, starts_with("p_")))
@@ -1281,6 +1358,17 @@ glht_c2 <- summary(glht(gmm_c, mcp(diet_category="Tukey")))
 df_glht_c2 <- data.frame(odds_ratio = exp(glht_c2$test$coeff), # Exponentiate to get odds ratio
                         p.value = glht_c2$test$pvalues,
                         comparison = names(glht_c2$test$coeff))
+
+## Test for age in subset
+gmm_c_age <- glm(oral_prop/100 ~ order + diet_category + Age,
+             family = quasibinomial, data = filter(decom_comp, !is.na(Age)))
+
+summary(gmm_c_age)
+
+car::vif(gmm_c_age) # Check for collinearity
+
+# Analysis of deviance
+car::Anova(gmm_c_age, type = "II") # analysis of deviance
 
 ### Repeats ####
 # Focus on samples that have been repeated after dilution
