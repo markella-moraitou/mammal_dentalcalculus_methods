@@ -59,7 +59,7 @@ for (file in dir(file.path(indir, "palettes"))) {
 }
 
 #######################
-####    PROCESS    ####
+####   PREP DATA   ####
 #######################
 
 #### Process input table ####
@@ -146,7 +146,7 @@ flow <- data.frame(x = rep(c(1, 1, 2), 4),
                    y = c(1, 2, 2, 3, 4, 4, 5, 6, 6, 7, 8, 8),
                    type = rep(c("Protocol step", "Quantification", "Value"), 4),
                    group = c(rep("Sample", 3), rep("DNA", 3), rep("Barcoding", 3), rep("Indexing", 3)),
-                   name = c("Sampling", "Weighing", "Weight (mg)",
+                   name = c("Sampling", "Weighing", "Weight (g)",
                             "DNA extraction", "Qubit dsDNA HS Assay", "DNA amount (μg)",
                             "Barcoding", "Post-barcoding qPCR","Barcoded libraries (molecules)",
                             "Indexing", "Post-indexing qPCR", "Indexed libraries (molecules)"))
@@ -169,7 +169,6 @@ flowchart <-
   theme(legend.position = "bottom", axis.text.x = element_blank(), axis.text.y = element_blank()) +
   labs(title = "DNA extraction and library preparation flowchart",
        subtitle = "indicating measurement steps and variables used within models")
-
 
 #Can't get arrows to work -- will add them later
 ggsave(filename  =  file.path(outdir, "flowchart.png"), flowchart, width  =  10, height = 8)
@@ -395,9 +394,9 @@ hist
 
 ggsave(filename  =  file.path(outdir, "indexing_hist.png"), hist, width  =  8, height = 8)
 
-#######################
-#### MIXED MODELS  ####
-#######################
+###############################
+#### PROTOCOL STEP-BY-STEP ####
+###############################
 
 # Create a set of diagnostic plots for GLMM
 diagnose_glmm <- function(model) {
@@ -539,12 +538,37 @@ pval <- kruskal_test(DNA_yield ~ diet_category, data = filt_dat1)$p
 effsize <- kruskal_effsize(DNA_yield ~ diet_category, data = filt_dat1)$effsize
 annot <- paste0("Kruskal-Wallis:\neffect size = ", round(effsize, 2), ",\np-value = ", pval)
 
+# Pairwise wilcoxon tests
+# Define comparisons
+comparisons <- list(
+  c("Herbivore", "Frugivore"),
+  c("Frugivore", "Animalivore"),
+  c("Herbivore", "Animalivore")
+)
+
+# Run Wilcoxon tests and collect p-values
+adjusted_p <- sapply(comparisons, function(comp) {
+  group1 <- filt_dat1$DNA_yield[filt_dat1$diet_category == comp[1]]
+  group2 <- filt_dat1$DNA_yield[filt_dat1$diet_category == comp[2]]
+  wilcox.test(group1, group2)$p.value
+}) %>% p.adjust(., method = "holm")
+
+# Create a data frame for stat_pvalue_manual
+pval_df <- data.frame(
+  group1 = sapply(comparisons, `[[`, 1),
+  group2 = sapply(comparisons, `[[`, 2),
+  y.position = c(0.25, 0.3, 0.35),  # Adjust based on your plot's y-axis
+  p.adj = adjusted_p,
+  p.adj.signif = symnum(adjusted_p, corr = FALSE, na = FALSE,
+                        cutpoints = c(0, 0.001, 0.01, 0.05, 0.1, 1),
+                        symbols = c("***", "**", "*", ".", "ns"))
+)
+
 model1_box <-
   ggviolin(data = filt_dat1, x = "diet_category", y = "DNA_yield", fill = "diet_category",
            add = "mean_se") +
   scale_fill_manual(values = diet2_palette, name = "") +
-  stat_compare_means(comparisons = list(c("Herbivore", "Frugivore"), c("Frugivore", "Animalivore"), c("Herbivore", "Animalivore")),
-                     label = "p.signif", method = "wilcox", size = 8) +
+  stat_pvalue_manual(pval_df, label = "p.adj.signif", size = 8) +
   annotate("text", label = annot, y = 0.1, x = 1.2, size = 6, hjust = 0) +
   ylab("DNA yield (μg per mg of dental calculus)") + xlab("Dietary category") +
   theme_bw_alt + theme(legend.position = "none") +
@@ -700,16 +724,34 @@ ann_text <- data.frame(lab = c(annot_p, annot_c),
                        Library_yield = c(10^(-4), 10^(-4)),
                        Extract = c("Pigmented", "Clear"))
 
+# Pairwise wilcoxon tests
+
+# Run Wilcoxon tests and collect p-values
+adjusted_p <- sapply(comparisons, function(comp) {
+  group1 <- filt_dat2$Library_yield[filt_dat2$diet_category == comp[1] & filt_dat2$Extract == "Clear"]
+  group2 <- filt_dat2$Library_yield[filt_dat2$diet_category == comp[2]  & filt_dat2$Extract == "Clear"]
+  wilcox.test(group1, group2)$p.value
+}) %>% p.adjust(., method = "holm")
+
+# Create a data frame for stat_pvalue_manual
+pval_df <- data.frame(
+  group1 = sapply(comparisons, `[[`, 1),
+  group2 = sapply(comparisons, `[[`, 2),
+  y.position = c(3, 3.6, 4.2),
+  Extract = c(rep("Clear", length(comparisons))),
+  p.adj = adjusted_p,
+  p.adj.signif = symnum(adjusted_p, corr = FALSE, na = FALSE,
+                        cutpoints = c(0, 0.001, 0.01, 0.05, 1),
+                        symbols = c("***", "**", "*", "ns"))
+)
+
 # Plot
 model2_box <-
   ggviolin(data = filter(filt_dat2, Extract != "Pigmented" | diet_category != "Animalivore"),
            x = "diet_category", y = "Library_yield", fill = "diet_category",
            add = "mean_se") +
   scale_fill_manual(values = diet2_palette, name = "") +
-  stat_compare_means(comparisons = list(c("Animalivore", "Frugivore"),
-                                        c("Animalivore", "Herbivore"),
-                                        c("Frugivore", "Herbivore")),
-                     label = "p.signif", size = 8) +
+  stat_pvalue_manual(pval_df, group = "Extract", label = "p.adj.signif", size = 8) +
   geom_text(data = ann_text, aes(label = lab), size = 6, hjust = 0) +
   facet_grid(cols = vars(Extract)) +
   scale_y_continuous(trans = "log10") +
@@ -844,15 +886,33 @@ ann_text <- data.frame(lab = c(annot_p, annot_c),
                        efficiency = c(-0.5, -0.5),
                        Extract = c("Pigmented", "Clear"))
 
+# Pairwise wilcoxon tests
+
+# Run Wilcoxon tests and collect p-values
+adjusted_p <- sapply(comparisons, function(comp) {
+  group1 <- filt_dat3$efficiency[filt_dat3$diet_category == comp[1] & filt_dat3$Extract == "Clear"]
+  group2 <- filt_dat3$efficiency[filt_dat3$diet_category == comp[2]  & filt_dat3$Extract == "Clear"]
+  wilcox.test(group1, group2)$p.value
+}) %>% p.adjust(., method = "holm")
+
+# Create a data frame for stat_pvalue_manual
+pval_df <- data.frame(
+  group1 = sapply(comparisons, `[[`, 1),
+  group2 = sapply(comparisons, `[[`, 2),
+  y.position = c(2, 2.2, 2.4),
+  Extract = c(rep("Clear", length(comparisons))),
+  p.adj = adjusted_p,
+  p.adj.signif = symnum(adjusted_p, corr = FALSE, na = FALSE,
+                        cutpoints = c(0, 0.001, 0.01, 0.05, 1),
+                        symbols = c("***", "**", "*", "ns"))
+)
+
 model3_box <-
   ggviolin(data = filter(filt_dat3, (Extract == "Clear" | diet_category != "Animalivore")),
            x = "diet_category", y = "efficiency", fill = "diet_category",
            add = "mean_se") +
   scale_fill_manual(values = diet2_palette, name = "") +
-  stat_compare_means(comparisons = list(c("Animalivore", "Frugivore"),
-                                        c("Animalivore", "Herbivore"),
-                                        c("Frugivore", "Herbivore")),
-                     label = "p.signif", size = 8) +
+  stat_pvalue_manual(pval_df, group = "Extract", label = "p.adj.signif", size = 8) +
   geom_text(data = ann_text, aes(label = lab), size = 6, hjust = 0) +
   scale_y_continuous(labels = percent_format(accuracy = 1), breaks = c(-0.5, 0, 0.5, 1, 1.5, 2, eff)) +
   ylab("Indexing PCR efficiency") + xlab("") +
@@ -959,7 +1019,7 @@ model4_box <-
   stat_compare_means(comparisons = list(c("Animalivore", "Frugivore"),
                                         c("Animalivore", "Herbivore"),
                                         c("Frugivore", "Herbivore")),
-                     label = "p.signif") +
+                     label = "p.signif", method = "wilcox", size = 8) +
   ylab("Indexed library molecules (10^10) per mg of sample") + xlab("") +
   facet_grid(cols = vars(Extract)) +
   geom_hline(yintercept = eff, linetype = "dashed") +
@@ -995,7 +1055,9 @@ hist(residuals(mm4_age))
 
 summary(mm4_age)
 
-#### Host vs Microbiome reads ####
+############################
+#### HOST VS MICROBIOME ####
+############################
 
 filt_dat_h <- filt_dat %>% filter(!is.na(host_count)) %>%
   dplyr::select(Ext.ID, PC1, PC2, Pigmented_extract, Age, Species, Common.name, order, diet_category, host_count, unmapped_count) %>%
@@ -1098,7 +1160,9 @@ car::vif(gmm_h_age) # Check for collinearity
 # Analysis of deviance
 car::Anova(gmm_h_age, type = "II") # analysis of deviance
 
-#### Source composition ####
+############################
+#### SOURCE COMPOSITION ####
+############################
 
 ## Plot composition by sample
 
@@ -1144,7 +1208,7 @@ decom_comp <-
   arrange(order_grouped, Ext.ID, Source)
 
 # Plot stacked barplot
-source_palette <- list("p_OralH"="#EB3838", "p_OralTM"="#A20404", "p_OralMM"="#FF5F5F", "p_Rumen"="#C4D307", "p_Sediment.Soil"="#6E7C15", "p_Skin"="#FFCC73", "p_Unknown"="#AAAAAA")
+source_palette <- list("p_OralH"="#EB3838", "p_OralTM"="#A20404", "p_OralMM"="#FFAEAE", "p_Rumen"="#C4D307", "p_Sediment.Soil"="#6E7C15", "p_Skin"="#FFCC73", "p_Unknown"="#AAAAAA")
 
 decom_bar <-
   ggplot(data = decom_comp, aes(y = Ext.ID, x = Proportion, fill = Source, group = Common.name)) +
