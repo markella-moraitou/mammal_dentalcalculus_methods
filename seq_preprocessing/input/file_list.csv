@@ -416,7 +416,7 @@ MV_107,Capreolus capreolus,${OUTDIR}/1_cleaned_seqs/MV_107_F.fastq.gz,${OUTDIR}/
 MV_006,Capreolus capreolus,${OUTDIR}/1_cleaned_seqs/MV_006_F.fastq.gz,${OUTDIR}/1_cleaned_seqs/MV_006_R.fastq.gz
 MS_114,Ovis aries,${OUTDIR}/1_cleaned_seqs/MS_114_F.fastq.gz,${OUTDIR}/1_cleaned_seqs/MS_114_R.fastq.gz
 DM_017,Sus scrofa domesticus,${OUTDIR}/1_cleaned_seqs/DM_017_F.fastq.gz,${OUTDIR}/1_cleaned_seqs/DM_017_R.fastq.gz
-maybe_DM_017,Sus scrofa domesticus,${OUTDIR}/1_cleaned_seqs/maybe_DM_017_F.fastq.gz,${OUTDIR}/1_cleaned_seqs/maybe_DM_017_R.fastq.gz
+DM_017,Sus scrofa domesticus,${OUTDIR}/1_cleaned_seqs/maybe_DM_017_F.fastq.gz,${OUTDIR}/1_cleaned_seqs/maybe_DM_017_R.fastq.gz
 MV_017,Capreolus capreolus,${OUTDIR}/1_cleaned_seqs/MV_017_F.fastq.gz,${OUTDIR}/1_cleaned_seqs/MV_017_R.fastq.gz
 MV_169,Pongo pygmaeus,${OUTDIR}/1_cleaned_seqs/MV_169_F.fastq.gz,${OUTDIR}/1_cleaned_seqs/MV_169_R.fastq.gz
 RM_152,Syncerus caffer,${OUTDIR}/1_cleaned_seqs/RM_152_F.fastq.gz,${OUTDIR}/1_cleaned_seqs/RM_152_R.fastq.gz
